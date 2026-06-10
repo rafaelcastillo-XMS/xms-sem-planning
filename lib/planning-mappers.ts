@@ -2,7 +2,6 @@ import { createEmptyClientResponse } from "@/lib/defaults";
 import { PlanningBuilderValues } from "@/lib/validators";
 import {
   Client,
-  MissingInfoItem,
   PlanningProposal,
   PlanningSession
 } from "@/types/planning";
@@ -17,6 +16,13 @@ export function sessionToBuilderValues(
   session: PlanningSession,
   client: Client
 ): PlanningBuilderValues {
+  const logoRequirement = session.proposal.assetRequirements.find(
+    (item) => item.id === "logo"
+  );
+  const photoRequirement = session.proposal.assetRequirements.find(
+    (item) => item.id === "business-photos"
+  );
+
   return {
     clientName: client.name,
     slug: client.slug,
@@ -30,10 +36,12 @@ export function sessionToBuilderValues(
     geoRecommendation: session.proposal.geoTarget.recommendation,
     locationsText: session.proposal.geoTarget.visibleLocations.join("\n"),
     recommendationsText: session.proposal.recommendations.join("\n"),
-    missingInfoText: session.proposal.missingInfoChecklist.map((item) => item.label).join("\n"),
-    assetInstructionsText: session.proposal.assetRequirements
-      .map((item) => item.instructions)
-      .join("\n\n"),
+    logoInstructionsText:
+      logoRequirement?.instructions ??
+      "Upload your current logo in high quality for branding consistency.",
+    photoInstructionsText:
+      photoRequirement?.instructions ??
+      "Please send us images that reflect your services, ongoing work, and business.",
     businessBioOptionsText: session.proposal.businessBioOptions
       .map((option) => option.label)
       .join("\n"),
@@ -50,28 +58,6 @@ export function builderValuesToProposal(
   const locations = splitLines(values.locationsText);
   const recommendations = splitLines(values.recommendationsText);
   const bioOptions = splitLines(values.businessBioOptionsText);
-  const missingLines = splitLines(values.missingInfoText);
-
-  const byLabel = new Map(
-    previous.missingInfoChecklist.map((item) => [item.label.toLowerCase(), item])
-  );
-
-  const missingInfoChecklist: MissingInfoItem[] = missingLines.map((label) => {
-    const existing = byLabel.get(label.toLowerCase());
-    if (existing) {
-      return { ...existing, label };
-    }
-
-    return {
-      id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-      label,
-      required: true,
-      fieldType: "text",
-      description: "Provided by client during onboarding"
-    };
-  });
-
-  const sharedInstructions = values.assetInstructionsText;
 
   return {
     ...previous,
@@ -90,12 +76,31 @@ export function builderValuesToProposal(
       visibleLocations: locations
     },
     recommendations,
-    missingInfoChecklist,
+    missingInfoChecklist: [],
     adsPreviewNote: values.adsPreviewNote,
-    assetRequirements: previous.assetRequirements.map((item) => ({
-      ...item,
-      instructions: sharedInstructions
-    })),
+    assetRequirements: previous.assetRequirements.map((item) => {
+      if (item.id === "logo") {
+        return {
+          ...item,
+          instructions: values.logoInstructionsText,
+          acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
+          maxSizeMb: 10,
+          minResolution: "640x640"
+        };
+      }
+
+      if (item.id === "business-photos") {
+        return {
+          ...item,
+          instructions: values.photoInstructionsText,
+          acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
+          maxSizeMb: 10,
+          minResolution: "640x640"
+        };
+      }
+
+      return item;
+    }),
     businessBioOptions: bioOptions.map((label) => ({
       id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
       label
@@ -149,7 +154,7 @@ export function createProposalFromBuilder(values: PlanningBuilderValues): Planni
       {
         id: "logo",
         title: "Company Logo",
-        instructions: "",
+        instructions: "Upload your current logo in high quality for branding consistency.",
         acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
         maxSizeMb: 10,
         minResolution: "640x640",
@@ -158,7 +163,7 @@ export function createProposalFromBuilder(values: PlanningBuilderValues): Planni
       {
         id: "business-photos",
         title: "Business & Work Photos",
-        instructions: "",
+        instructions: "Please send us images that reflect your services, ongoing work, and business.",
         acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
         maxSizeMb: 10,
         minResolution: "640x640",

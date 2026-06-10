@@ -22,8 +22,9 @@ export function defaultBusinessHours() {
 export function createEmptyClientResponse(
   proposal?: PlanningProposal
 ): ClientResponse {
-  const missingInfoResponses =
-    proposal?.missingInfoChecklist.reduce<Record<string, string | number | boolean | string[]>>(
+  const missingInfoResponses = {
+    totalFieldworkers: "",
+    ...(proposal?.missingInfoChecklist.reduce<Record<string, string | number | boolean | string[]>>(
       (acc, item) => {
         if (item.fieldType === "checkbox") {
           acc[item.id] = false;
@@ -37,12 +38,8 @@ export function createEmptyClientResponse(
         return acc;
       },
       {}
-    ) ?? {
-      totalFieldworkers: "",
-      extendedServiceArea: "",
-      weekendBusinessHours: "",
-      businessBioCategories: ""
-    };
+    ) ?? {})
+  };
 
   return {
     introAcknowledged: false,

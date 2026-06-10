@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
+import { publicAsset } from "@/lib/utils";
 
 interface WizardLayoutProps {
   header: ReactNode;
@@ -36,7 +37,7 @@ export function WizardLayout({
         <div className="pt-6 pb-2 flex items-center justify-center gap-4 opacity-80">
           <div className="relative h-7 w-24">
             <Image
-              src="/logo.png"
+              src={publicAsset("/logo.png")}
               alt="XMS Ai"
               fill
               sizes="96px"
@@ -46,7 +47,7 @@ export function WizardLayout({
           <span className="text-slate-300">·</span>
           <div className="relative h-7 w-24">
             <Image
-              src="/google-partner.png"
+              src={publicAsset("/google-partner.png")}
               alt="Google Partner"
               fill
               sizes="96px"

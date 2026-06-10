@@ -140,7 +140,7 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
           </CardContent>
         </Card>
 
-        {/* Business Bio & Missing Info */}
+        {/* Business Bio, Team & Comments */}
         <Card className="premium-card md:col-span-2">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
@@ -162,19 +162,34 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
             <Separator />
 
             <div>
-              <Label className="text-[10px] uppercase text-muted-foreground font-bold">Missing Information Checklist</Label>
-              <div className="mt-2 space-y-3">
-                {proposal.missingInfoChecklist.map(item => (
-                  <div key={item.id} className="flex flex-col gap-1 p-3 bg-slate-50 rounded-xl">
-                    <span className="text-xs font-bold">{item.label}</span>
-                    <p className="text-sm text-slate-700">{response.missingInfoResponses[item.id] || "No response provided"}</p>
-                    {response.acknowledgedMissingItems.includes(item.id) && (
-                      <Badge variant="outline" className="w-fit text-[10px] leading-none py-0 h-4 border-slate-300">Acknowledged</Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <Label className="text-[10px] uppercase text-muted-foreground font-bold">Team Information</Label>
+              <p className="mt-1 text-sm text-slate-700">
+                Fieldworkers:{" "}
+                <span className="font-bold text-primary">
+                  {String(response.missingInfoResponses.totalFieldworkers || "No response provided")}
+                </span>
+              </p>
             </div>
+
+            {proposal.missingInfoChecklist.length > 0 ? (
+              <>
+                <Separator />
+                <div>
+                  <Label className="text-[10px] uppercase text-muted-foreground font-bold">Additional Checklist</Label>
+                  <div className="mt-2 space-y-3">
+                    {proposal.missingInfoChecklist.map(item => (
+                      <div key={item.id} className="flex flex-col gap-1 p-3 bg-slate-50 rounded-xl">
+                        <span className="text-xs font-bold">{item.label}</span>
+                        <p className="text-sm text-slate-700">{response.missingInfoResponses[item.id] || "No response provided"}</p>
+                        {response.acknowledgedMissingItems.includes(item.id) && (
+                          <Badge variant="outline" className="w-fit text-[10px] leading-none py-0 h-4 border-slate-300">Acknowledged</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
 
             {response.finalComment && (
               <div>

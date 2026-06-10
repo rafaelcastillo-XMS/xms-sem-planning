@@ -64,6 +64,12 @@ export const WIZARD_STEPS: WizardStep[] = [
   },
   {
     id: 11,
+    section: "comments",
+    title: "Additional Comments",
+    description: "Share anything else before submission"
+  },
+  {
+    id: 12,
     section: "review",
     title: "Review & Submit",
     description: "Final check before submission"
@@ -115,5 +121,10 @@ export const REVIEW_SECTIONS: ReviewSection[] = [
     id: "recommendations",
     title: "SEM Team Recommendations",
     description: "Notes from the SEM team"
+  },
+  {
+    id: "comments",
+    title: "Additional Comments",
+    description: "Final client notes"
   }
 ];

@@ -11,6 +11,7 @@ export type ProposalSection =
   | "team"
   | "ads"
   | "recommendations"
+  | "comments"
   | "review";
 
 export interface Client {

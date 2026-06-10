@@ -26,6 +26,12 @@ export function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+export function publicAsset(path: string) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${basePath}${normalizedPath}`;
+}
+
 export const DAY_LABELS: Record<string, string> = {
   monday: "Monday",
   tuesday: "Tuesday",

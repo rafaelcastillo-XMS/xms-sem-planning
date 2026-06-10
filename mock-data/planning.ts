@@ -70,7 +70,7 @@ const gutterGuardiansProposal: PlanningSession["proposal"] = {
       id: "business-photos",
       title: "Business & Work Photos",
       instructions:
-        "Share images that show your services, projects in progress, team, and finished work.",
+        "Please send us images that reflect your services, ongoing work, and business.",
       acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
       maxSizeMb: 10,
       minResolution: "640x640",
@@ -124,20 +124,7 @@ const gutterGuardiansProposal: PlanningSession["proposal"] = {
     "Expand service areas where possible.",
     "Complete the Google background check process as soon as possible."
   ],
-  // Ajuste #12 — Eliminadas duplicaciones. Estos items ya se solicitan en pasos dedicados:
-  //   - images-logo             → step 5 (Photos & Assets)
-  //   - total-fieldworkers      → step 8 (Team Information)
-  //   - weekend-hours           → step 6 (Business Hours / hoursNotes)
-  //   - business-bio-categories → step 7 (Business Bio)
-  missingInfoChecklist: [
-    {
-      id: "extended-service-area",
-      label: "Extended service area",
-      description: "List additional cities/counties you can cover.",
-      required: false,
-      fieldType: "text"
-    }
-  ]
+  missingInfoChecklist: []
 };
 
 const seedResponse = createEmptyClientResponse(gutterGuardiansProposal);

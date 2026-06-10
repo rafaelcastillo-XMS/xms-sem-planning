@@ -25,6 +25,12 @@ import {
 import { slugify, uid } from "@/lib/utils";
 
 const STORAGE_KEY = "sem_planning_mvp_state_v1";
+const LOGO_INSTRUCTIONS =
+  "Upload your current logo in high quality for branding consistency.";
+const PHOTO_INSTRUCTIONS =
+  "Please send us images that reflect your services, ongoing work, and business.";
+const OLD_PHOTO_INSTRUCTIONS =
+  "Share images that show your services, projects in progress, team, and finished work.";
 
 const clone = <T,>(value: T): T => {
   try {
@@ -59,14 +65,50 @@ const initialSeed: PlanningSeedState = {
   sessions: seededSessions
 };
 
+const normalizeSeedState = (state: PlanningSeedState): PlanningSeedState => ({
+  clients: state.clients,
+  sessions: state.sessions.map((session) => ({
+    ...session,
+    proposal: {
+      ...session.proposal,
+      missingInfoChecklist: [],
+      assetRequirements: session.proposal.assetRequirements.map((requirement) => {
+        if (requirement.id === "logo" && !requirement.instructions) {
+          return { ...requirement, instructions: LOGO_INSTRUCTIONS };
+        }
+
+        if (
+          requirement.id === "business-photos" &&
+          (!requirement.instructions || requirement.instructions === OLD_PHOTO_INSTRUCTIONS)
+        ) {
+          return { ...requirement, instructions: PHOTO_INSTRUCTIONS };
+        }
+
+        return requirement;
+      })
+    },
+    response: {
+      ...session.response,
+      missingInfoResponses: {
+        totalFieldworkers: "",
+        ...(session.response.missingInfoResponses ?? {})
+      },
+      acknowledgedMissingItems: session.response.acknowledgedMissingItems ?? [],
+      finalComment: session.response.finalComment ?? ""
+    }
+  }))
+});
+
+const normalizedInitialSeed = normalizeSeedState(initialSeed);
+
 const PlanningStoreContext = createContext<PlanningStoreContextValue | undefined>(
   undefined
 );
 
 export function PlanningStoreProvider({ children }: { children: ReactNode }) {
-  const [clients, setClients] = useState<Client[]>(clone(initialSeed.clients));
+  const [clients, setClients] = useState<Client[]>(clone(normalizedInitialSeed.clients));
   const [sessions, setSessions] = useState<PlanningSession[]>(
-    clone(initialSeed.sessions)
+    clone(normalizedInitialSeed.sessions)
   );
   const [hydrated, setHydrated] = useState(false);
 
@@ -76,8 +118,9 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed = JSON.parse(raw) as PlanningSeedState;
         if (parsed?.clients && parsed?.sessions) {
-          setClients(parsed.clients);
-          setSessions(parsed.sessions);
+          const normalized = normalizeSeedState(parsed);
+          setClients(normalized.clients);
+          setSessions(normalized.sessions);
         }
       }
     } catch {

@@ -17,7 +17,8 @@ import {
   Lightbulb,
   Flag,
   Sparkles,
-  ClipboardCheck
+  ClipboardCheck,
+  MessageSquare
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Confetti from "react-confetti";
@@ -66,12 +67,25 @@ const SECTION_TO_STEP: Record<ProposalSection, number> = {
   team: 8,
   ads: 9,
   recommendations: 10,
-  review: 11
+  comments: 11,
+  review: 12
 };
 
-// Constante única para el total de pasos del wizard.
-// Si cambia, actualizar SECTION_TO_STEP arriba.
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = WIZARD_STEPS.length;
+
+const getRequirementText = (value?: string) => value || "Provided by the SEM team.";
+
+const formatPhotoRequirements = (requirement: PlanningSession["proposal"]["assetRequirements"][number]) => {
+  const parts = [
+    requirement.acceptedFileTypes.length
+      ? `Images must be submitted in ${requirement.acceptedFileTypes.join(", ")} format`
+      : null,
+    requirement.minResolution ? `minimum required resolution is ${requirement.minResolution.replace("x", " x ")} pixels` : null,
+    requirement.maxSizeMb ? `maximum file size allowed is ${requirement.maxSizeMb} MB` : null
+  ].filter(Boolean);
+
+  return parts.length ? `Photo requirements: ${parts.join(", ")}.` : "";
+};
 
 export function ClientWizard({
   client,
@@ -107,6 +121,10 @@ export function ClientWizard({
   const values = watch();
 
   const currentStepMeta = WIZARD_STEPS[currentStep - 1];
+  const logoRequirement = session.proposal.assetRequirements.find((item) => item.id === "logo");
+  const photoRequirement = session.proposal.assetRequirements.find(
+    (item) => item.id === "business-photos"
+  );
 
   const validateStep = async () => {
     setStepError(null);
@@ -169,6 +187,10 @@ export function ClientWizard({
     // Ajuste #7 — el step 10 solo muestra recomendaciones del SEM team (sin formulario)
     if (currentStep === 10) {
       return true;
+    }
+
+    if (currentStep === 11) {
+      return trigger(["finalComment"]);
     }
 
     return true;
@@ -411,11 +433,11 @@ export function ClientWizard({
             <div className="rounded-xl border bg-white p-3 shadow-sm">
               <p className="text-sm font-bold text-slate-800">Company logo</p>
               <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                Upload your current logo in high quality for branding consistency.
+                {getRequirementText(logoRequirement?.instructions)}
               </p>
               <UploadDropzoneOrInput
                 label="Upload logo"
-                helper="SVG or PNG with transparent background preferred"
+                helper="JPEG, PNG, BMP or ICO. Transparent background preferred."
                 onFiles={(files) =>
                   setValue("assets.logoFileName", files[0] || "", {
                     shouldDirty: true,
@@ -428,11 +450,13 @@ export function ClientWizard({
             <div className="rounded-xl border bg-white p-3 shadow-sm">
               <p className="text-sm font-bold text-slate-800">Business &amp; work photos</p>
               <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                Please send us images that reflect your services, ongoing work, and business.
+                {getRequirementText(photoRequirement?.instructions)}
               </p>
-              <p className="mt-2 text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
-                Photo requirements: JPEG, PNG, BMP or ICO · Min 640×640 px · Max 10 MB
-              </p>
+              {photoRequirement ? (
+                <p className="mt-2 text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
+                  {formatPhotoRequirements(photoRequirement)}
+                </p>
+              ) : null}
               <UploadDropzoneOrInput
                 label="Upload business photos"
                 helper="Interior, exterior, projects, or team"
@@ -615,6 +639,37 @@ export function ClientWizard({
       ) : null}
 
       {currentStep === 11 ? (
+        <CompactStepCard
+          title="Additional Comments"
+          description="Share any final context before the SEM team processes your plan."
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-slate-800 tracking-tight">Final Notes</span>
+          </div>
+          <div className="rounded-xl border border-primary/15 bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-50 p-4">
+            <Label className="text-sm font-bold text-slate-900">
+              Is there anything else you want us to know before we process your SEM plan?
+            </Label>
+            <p className="mt-1 text-xs text-slate-600">
+              Add special requests, launch timing notes, contact preferences, or anything that did not fit earlier.
+            </p>
+            <Textarea
+              placeholder="Ex: Please call before launching, or prioritize these locations first..."
+              value={values.finalComment || ""}
+              onChange={(event) =>
+                setValue("finalComment", event.target.value, {
+                  shouldDirty: true,
+                  shouldValidate: true
+                })
+              }
+              className="mt-4 min-h-32 bg-white"
+            />
+          </div>
+        </CompactStepCard>
+      ) : null}
+
+      {currentStep === 12 ? (
         <CompactStepCard title="Review & Submit" description="Verify all sections before finalizing.">
           <div className="flex items-center gap-2 mb-2">
             <Flag className="h-4 w-4 text-primary" />
@@ -654,6 +709,9 @@ export function ClientWizard({
                   )}
                   {section.id === "recommendations" && (
                     <p className="font-medium text-slate-700">Status: <span className="text-primary font-bold">Checked</span></p>
+                  )}
+                  {section.id === "comments" && (
+                    <p className="font-medium text-slate-700">Additional comments: <span className="text-primary font-bold">{values.finalComment ? "Provided" : "None"}</span></p>
                   )}
                 </div>
               </ReviewSectionCard>

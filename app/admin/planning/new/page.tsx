@@ -46,8 +46,9 @@ export default function NewPlanningPage() {
       geoRecommendation: "Prioritize high-converting zip codes first.",
       locationsText: "Jupiter\nStuart",
       recommendationsText: "Collect reviews weekly",
-      missingInfoText: "Images and logo\nWeekend business hours",
-      assetInstructionsText: "Upload high-quality photos of recent projects.",
+      logoInstructionsText: "Upload your current logo in high quality for branding consistency.",
+      photoInstructionsText:
+        "Please send us images that reflect your services, ongoing work, and business.",
       businessBioOptionsText: "Free Estimate\nFamily-owned & operated",
       adsPreviewNote: "Final ads may vary based on available content and variables."
     };

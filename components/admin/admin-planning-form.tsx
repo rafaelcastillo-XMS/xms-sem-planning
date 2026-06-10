@@ -135,21 +135,21 @@ export function AdminPlanningForm({
           <CardContent className="grid gap-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="grid gap-2">
-                <Label className="text-xs font-semibold uppercase text-slate-500">Weekly budget</Label>
+                <Label className="text-xs font-semibold uppercase text-slate-500">Client weekly budget</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                   <Input type="number" {...register("weeklyBudget")} className="pl-7 bg-white/50" />
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs font-semibold uppercase text-slate-500">Monthly budget</Label>
+                <Label className="text-xs font-semibold uppercase text-slate-500">Client monthly budget</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                   <Input type="number" {...register("monthlyBudget")} className="pl-7 bg-white/50" />
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs font-semibold uppercase text-slate-500">Min. req budget</Label>
+                <Label className="text-xs font-semibold uppercase text-slate-500">Min. req. budget from Google</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                   <Input type="number" {...register("minimumRequiredBudget")} className="pl-7 bg-white/50" />
@@ -157,7 +157,7 @@ export function AdminPlanningForm({
               </div>
             </div>
             <div className="grid gap-2 mt-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Budget recommendation note</Label>
+              <Label className="text-xs font-semibold uppercase text-slate-500">Budget Recommendation note by XMS</Label>
               <Textarea {...register("budgetNote")} className="bg-white/50" />
             </div>
           </CardContent>
@@ -172,16 +172,16 @@ export function AdminPlanningForm({
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Geo recommendation</Label>
-              <Textarea {...register("geoRecommendation")} className="bg-white/50" />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Visible target locations</Label>
+              <Label className="text-xs font-semibold uppercase text-slate-500">Visible target locations (selected by client)</Label>
               <Textarea
                 {...register("locationsText")}
                 placeholder="One location per line"
                 className="bg-white/50 min-h-[100px]"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs font-semibold uppercase text-slate-500">Geo target recommendation by XMS</Label>
+              <Textarea {...register("geoRecommendation")} className="bg-white/50" />
             </div>
           </CardContent>
         </Card>
@@ -190,13 +190,17 @@ export function AdminPlanningForm({
           <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
             <CardTitle className="flex items-center gap-2 text-base font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
               <ClipboardCheck className="h-4 w-4 text-primary" />
-              5. Final Details & Checklist
+              5. Creative Details & SEM Notes
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Asset instructions</Label>
-              <Textarea {...register("assetInstructionsText")} className="bg-white/50" />
+              <Label className="text-xs font-semibold uppercase text-slate-500">Company logo description</Label>
+              <Textarea {...register("logoInstructionsText")} className="bg-white/50" />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs font-semibold uppercase text-slate-500">Business &amp; work photos description</Label>
+              <Textarea {...register("photoInstructionsText")} className="bg-white/50" />
             </div>
             <div className="grid gap-2">
               <Label className="text-xs font-semibold uppercase text-slate-500">Business bio options</Label>
@@ -215,14 +219,6 @@ export function AdminPlanningForm({
               <Textarea
                 {...register("recommendationsText")}
                 placeholder="One recommendation per line"
-                className="bg-white/50"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Missing information</Label>
-              <Textarea
-                {...register("missingInfoText")}
-                placeholder="One item per line"
                 className="bg-white/50"
               />
             </div>

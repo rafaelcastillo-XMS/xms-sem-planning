@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, publicAsset } from "@/lib/utils";
 
 interface AppShellProps {
   title?: string;
@@ -29,7 +29,7 @@ export function AppShell({
               {/* Logo - Larger and crisp */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`}
+                src={publicAsset("/logo.png")}
                 alt="XMS Logo"
                 className="h-20 md:h-24 w-auto object-contain transition-transform hover:scale-105 duration-500"
               />

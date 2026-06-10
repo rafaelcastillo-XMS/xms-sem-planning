@@ -96,8 +96,8 @@ export const planningBuilderSchema = z.object({
   geoRecommendation: z.string().min(5).max(800),
   locationsText: z.string().min(3),
   recommendationsText: z.string().min(5),
-  missingInfoText: z.string().min(5),
-  assetInstructionsText: z.string().min(5),
+  logoInstructionsText: z.string().min(5).max(500),
+  photoInstructionsText: z.string().min(5).max(800),
   businessBioOptionsText: z.string().min(5),
   adsPreviewNote: z.string().min(5)
 });

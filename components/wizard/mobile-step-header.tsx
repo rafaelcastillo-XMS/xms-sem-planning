@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { Badge } from "@/components/ui/badge";
 import { StepProgressBar } from "@/components/wizard/step-progress-bar";
+import { publicAsset } from "@/lib/utils";
 
 interface MobileStepHeaderProps {
   logoUrl?: string;
@@ -33,7 +34,7 @@ export function MobileStepHeader({
             {/* Logo XMS — branding agencia */}
             <div className="relative h-6 w-20 rounded bg-white/95 px-1.5 py-0.5">
               <Image
-                src="/logo.png"
+                src={publicAsset("/logo.png")}
                 alt="XMS Ai"
                 fill
                 sizes="80px"
@@ -49,7 +50,7 @@ export function MobileStepHeader({
             {/* Logo Google Partner */}
             <div className="relative h-6 w-[68px] rounded bg-white/95">
               <Image
-                src="/google-partner.png"
+                src={publicAsset("/google-partner.png")}
                 alt="Google Partner"
                 fill
                 sizes="68px"
