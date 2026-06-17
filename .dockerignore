@@ -1,0 +1,12 @@
+.git
+.github
+.next
+out
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+eslint.txt
+eslint_errors.txt
+lint_output.txt
+tsconfig.tsbuildinfo
