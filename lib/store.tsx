@@ -13,6 +13,7 @@ import {
 import { createEmptyClientResponse } from "@/lib/defaults";
 import { seededClients } from "@/mock-data/clients";
 import { seededSessions } from "@/mock-data/planning";
+import { CLIENTS_TABLE, SESSIONS_TABLE, supabase } from "@/lib/supabase";
 import {
   Client,
   ClientResponse,
@@ -24,7 +25,6 @@ import {
 } from "@/types/planning";
 import { slugify, uid } from "@/lib/utils";
 
-const STORAGE_KEY = "sem_planning_mvp_state_v1";
 const LOGO_INSTRUCTIONS =
   "Upload your current logo in high quality for branding consistency.";
 const PHOTO_INSTRUCTIONS =
@@ -57,6 +57,7 @@ interface PlanningStoreContextValue {
     status?: PlanningStatus
   ) => void;
   submitSession: (sessionId: string, response: ClientResponse) => void;
+  deletePlanning: (sessionId: string) => void;
   resetSeedData: () => void;
 }
 
@@ -101,6 +102,77 @@ const normalizeSeedState = (state: PlanningSeedState): PlanningSeedState => ({
 
 const normalizedInitialSeed = normalizeSeedState(initialSeed);
 
+// --- Supabase row <-> domain mappers -------------------------------------
+
+interface ClientRow {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  contact_phone: string | null;
+}
+
+interface SessionRow {
+  id: string;
+  client_id: string;
+  status: PlanningStatus;
+  proposal: PlanningProposal;
+  response: ClientResponse;
+  created_at: string;
+  updated_at: string;
+  submitted_at: string | null;
+}
+
+const clientToRow = (client: Client): ClientRow => ({
+  id: client.id,
+  name: client.name,
+  slug: client.slug,
+  logo_url: client.logoUrl ?? null,
+  contact_phone: client.contactPhone ?? null
+});
+
+const rowToClient = (row: ClientRow): Client => ({
+  id: row.id,
+  name: row.name,
+  slug: row.slug,
+  logoUrl: row.logo_url ?? undefined,
+  contactPhone: row.contact_phone ?? undefined
+});
+
+const sessionToRow = (session: PlanningSession): SessionRow => ({
+  id: session.id,
+  client_id: session.clientId,
+  status: session.status,
+  proposal: session.proposal,
+  response: session.response,
+  created_at: session.createdAt,
+  updated_at: session.updatedAt,
+  submitted_at: session.submittedAt ?? null
+});
+
+const rowToSession = (row: SessionRow): PlanningSession => ({
+  id: row.id,
+  clientId: row.client_id,
+  status: row.status,
+  proposal: row.proposal,
+  response: row.response,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  submittedAt: row.submitted_at ?? undefined
+});
+
+// Fire-and-forget persistence: UI updates optimistically, errors are logged.
+const persist = (
+  label: string,
+  run: () => PromiseLike<{ error: unknown }>
+) => {
+  Promise.resolve(run())
+    .then(({ error }) => {
+      if (error) console.error(`[store] ${label} failed`, error);
+    })
+    .catch((error) => console.error(`[store] ${label} threw`, error));
+};
+
 const PlanningStoreContext = createContext<PlanningStoreContextValue | undefined>(
   undefined
 );
@@ -113,28 +185,50 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as PlanningSeedState;
-        if (parsed?.clients && parsed?.sessions) {
-          const normalized = normalizeSeedState(parsed);
-          setClients(normalized.clients);
-          setSessions(normalized.sessions);
-        }
-      }
-    } catch {
-      // Keep seed data if parsing fails.
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
+    let active = true;
 
-  useEffect(() => {
-    if (!hydrated) return;
-    const payload: PlanningSeedState = { clients, sessions };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [clients, sessions, hydrated]);
+    const load = async () => {
+      try {
+        const [clientsRes, sessionsRes] = await Promise.all([
+          supabase.from(CLIENTS_TABLE).select("*"),
+          supabase.from(SESSIONS_TABLE).select("*")
+        ]);
+
+        if (clientsRes.error) throw clientsRes.error;
+        if (sessionsRes.error) throw sessionsRes.error;
+
+        const clientRows = (clientsRes.data ?? []) as ClientRow[];
+        const sessionRows = (sessionsRes.data ?? []) as SessionRow[];
+
+        if (clientRows.length === 0 && sessionRows.length === 0) {
+          // Empty DB: seed it once with the template data.
+          const seed = clone(normalizedInitialSeed);
+          await supabase.from(CLIENTS_TABLE).insert(seed.clients.map(clientToRow));
+          await supabase.from(SESSIONS_TABLE).insert(seed.sessions.map(sessionToRow));
+          if (!active) return;
+          setClients(seed.clients);
+          setSessions(seed.sessions);
+        } else {
+          const loaded = normalizeSeedState({
+            clients: clientRows.map(rowToClient),
+            sessions: sessionRows.map(rowToSession)
+          });
+          if (!active) return;
+          setClients(loaded.clients);
+          setSessions(loaded.sessions);
+        }
+      } catch (error) {
+        console.error("[store] load failed, using seed data", error);
+      } finally {
+        if (active) setHydrated(true);
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const getClientById = useCallback(
     (id: string) => clients.find((client) => client.id === id),
@@ -166,7 +260,14 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
 
   const updateClient = useCallback((clientId: string, patch: Partial<Client>) => {
     setClients((prev) =>
-      prev.map((client) => (client.id === clientId ? { ...client, ...patch } : client))
+      prev.map((client) => {
+        if (client.id !== clientId) return client;
+        const next = { ...client, ...patch };
+        persist("updateClient", () =>
+          supabase.from(CLIENTS_TABLE).update(clientToRow(next)).eq("id", clientId)
+        );
+        return next;
+      })
     );
   }, []);
 
@@ -203,24 +304,31 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
       setClients((prev) => [client, ...prev]);
       setSessions((prev) => [session, ...prev]);
 
+      // Insert client first (FK), then session.
+      persist("createPlanning", async () => {
+        const clientRes = await supabase.from(CLIENTS_TABLE).insert(clientToRow(client));
+        if (clientRes.error) return clientRes;
+        return supabase.from(SESSIONS_TABLE).insert(sessionToRow(session));
+      });
+
       return session;
     },
     [clients]
   );
 
-
   const updateSessionProposal = useCallback(
     (sessionId: string, proposal: PlanningProposal) => {
+      const updatedAt = new Date().toISOString();
       setSessions((prev) =>
         prev.map((session) =>
-          session.id === sessionId
-            ? {
-                ...session,
-                proposal,
-                updatedAt: new Date().toISOString()
-              }
-            : session
+          session.id === sessionId ? { ...session, proposal, updatedAt } : session
         )
+      );
+      persist("updateSessionProposal", () =>
+        supabase
+          .from(SESSIONS_TABLE)
+          .update({ proposal, updated_at: updatedAt })
+          .eq("id", sessionId)
       );
     },
     []
@@ -228,6 +336,7 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
 
   const updateSessionResponse = useCallback(
     (sessionId: string, response: ClientResponse, status?: PlanningStatus) => {
+      const updatedAt = new Date().toISOString();
       setSessions((prev) =>
         prev.map((session) =>
           session.id === sessionId
@@ -235,16 +344,22 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
                 ...session,
                 response,
                 status: status ?? session.status,
-                updatedAt: new Date().toISOString()
+                updatedAt
               }
             : session
         )
       );
+      persist("updateSessionResponse", () => {
+        const patch: Record<string, unknown> = { response, updated_at: updatedAt };
+        if (status) patch.status = status;
+        return supabase.from(SESSIONS_TABLE).update(patch).eq("id", sessionId);
+      });
     },
     []
   );
 
   const submitSession = useCallback((sessionId: string, response: ClientResponse) => {
+    const now = new Date().toISOString();
     setSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId
@@ -252,20 +367,64 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
               ...session,
               response,
               status: "submitted",
-              submittedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              submittedAt: now,
+              updatedAt: now
             }
           : session
       )
     );
+    persist("submitSession", () =>
+      supabase
+        .from(SESSIONS_TABLE)
+        .update({
+          response,
+          status: "submitted",
+          submitted_at: now,
+          updated_at: now
+        })
+        .eq("id", sessionId)
+    );
   }, []);
 
+  const deletePlanning = useCallback(
+    (sessionId: string) => {
+      const session = sessions.find((entry) => entry.id === sessionId);
+      const clientId = session?.clientId;
+
+      setSessions((prev) => prev.filter((entry) => entry.id !== sessionId));
+      if (clientId) {
+        setClients((prev) => prev.filter((entry) => entry.id !== clientId));
+      }
+
+      // Deleting the client cascades the session row (FK on delete cascade).
+      persist("deletePlanning", async () => {
+        if (clientId) {
+          return supabase.from(CLIENTS_TABLE).delete().eq("id", clientId);
+        }
+        return supabase.from(SESSIONS_TABLE).delete().eq("id", sessionId);
+      });
+    },
+    [sessions]
+  );
+
   const resetSeedData = useCallback(() => {
-    const clientsSeed = clone(initialSeed.clients);
-    const sessionsSeed = clone(initialSeed.sessions);
-    setClients(clientsSeed);
-    setSessions(sessionsSeed);
-    localStorage.removeItem(STORAGE_KEY);
+    const seed = clone(normalizedInitialSeed);
+    setClients(seed.clients);
+    setSessions(seed.sessions);
+
+    persist("resetSeedData", async () => {
+      // Wipe everything (cascade removes sessions), then re-insert seed.
+      const del = await supabase
+        .from(CLIENTS_TABLE)
+        .delete()
+        .neq("id", "");
+      if (del.error) return del;
+      const clientsRes = await supabase
+        .from(CLIENTS_TABLE)
+        .insert(seed.clients.map(clientToRow));
+      if (clientsRes.error) return clientsRes;
+      return supabase.from(SESSIONS_TABLE).insert(seed.sessions.map(sessionToRow));
+    });
   }, []);
 
   const value = useMemo(
@@ -281,6 +440,7 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
       updateSessionProposal,
       updateSessionResponse,
       submitSession,
+      deletePlanning,
       resetSeedData,
       isSlugAvailable
     }),
@@ -296,10 +456,10 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
       updateSessionProposal,
       updateSessionResponse,
       submitSession,
+      deletePlanning,
       resetSeedData,
       isSlugAvailable
     ]
-
   );
 
   return (

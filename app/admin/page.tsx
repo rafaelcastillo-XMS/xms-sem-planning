@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlanningStore } from "@/lib/store";
-import { 
-  PlusCircle, 
-  RotateCcw, 
-  Settings, 
-  ExternalLink, 
-  Layers 
+import {
+  PlusCircle,
+  RotateCcw,
+  Settings,
+  ExternalLink,
+  Layers,
+  Trash2
 } from "lucide-react";
 
 const statusLabel = {
@@ -22,7 +23,8 @@ const statusLabel = {
 };
 
 export default function AdminPage() {
-  const { sessions, getClientById, resetSeedData, hydrated } = usePlanningStore();
+  const { sessions, getClientById, resetSeedData, deletePlanning, hydrated } =
+    usePlanningStore();
 
   if (!hydrated) {
     return (
@@ -114,6 +116,22 @@ export default function AdminPage() {
                         <ExternalLink className="mr-2 h-3.5 w-3.5" />
                         Client URL
                       </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-slate-400 hover:text-destructive hover:bg-destructive/5"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `¿Eliminar el planning de "${client.name}"? Esta acción no se puede deshacer.`
+                          )
+                        ) {
+                          deletePlanning(session.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </CardContent>
