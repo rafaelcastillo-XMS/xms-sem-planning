@@ -63,7 +63,7 @@ export function WizardLayout({
               type="button"
               variant="outline"
               size="default"
-              className="flex-1"
+              className="flex-1 rounded-full"
               onClick={onBack}
               disabled={!onBack}
             >
@@ -72,7 +72,7 @@ export function WizardLayout({
             <Button
               type="button"
               size="default"
-              className="flex-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 hover:opacity-90 text-white border-0 shadow-md"
+              className="flex-1 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-md"
               onClick={onNext}
               disabled={disableNext}
             >

@@ -13,10 +13,8 @@ interface MobileStepHeaderProps {
   totalSteps: number;
 }
 
-// Ajustes #10 + #11
-// - Header más friendly y con más color (gradiente XMS)
-// - Logos XMS y Google Partner visibles en la cabecera
-// - Layout más cálido sin perder jerarquía
+// Header inspirado en apps móviles: bloque azul sólido de marca,
+// redondeado, flotando sobre fondo claro (no fondo azul en toda la pantalla).
 export function MobileStepHeader({
   logoUrl,
   companyName,
@@ -26,46 +24,42 @@ export function MobileStepHeader({
   totalSteps
 }: MobileStepHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 border-b border-white/30 backdrop-blur-md">
-      {/* Banda superior con gradiente colorido */}
-      <div className="bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 px-4 py-2.5 text-white shadow-md">
+    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md pb-2">
+      {/* Barra superior: branding agencia */}
+      <div className="px-4 pt-3 pb-2">
         <div className="mx-auto flex w-full max-w-xl items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            {/* Logo XMS — branding agencia */}
-            <div className="relative h-6 w-20 rounded bg-white/95 px-1.5 py-0.5">
+            <div className="relative h-6 w-20">
               <Image
                 src={publicAsset("/logo.png")}
                 alt="XMS Ai"
                 fill
                 sizes="80px"
-                className="object-contain p-0.5"
+                className="object-contain"
                 priority
               />
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-white/90">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               SEM Plan
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            {/* Logo Google Partner */}
-            <div className="relative h-6 w-[68px] rounded bg-white/95">
-              <Image
-                src={publicAsset("/google-partner.png")}
-                alt="Google Partner"
-                fill
-                sizes="68px"
-                className="object-contain p-0.5"
-              />
-            </div>
+          <div className="relative h-6 w-[68px]">
+            <Image
+              src={publicAsset("/google-partner.png")}
+              alt="Google Partner"
+              fill
+              sizes="68px"
+              className="object-contain"
+            />
           </div>
         </div>
       </div>
 
-      {/* Cuerpo del header con info del cliente y progreso */}
-      <div className="bg-white/95 px-4 py-3">
-        <div className="mx-auto w-full max-w-xl space-y-3">
+      {/* Hero: bloque sólido azul de marca */}
+      <div className="mx-4">
+        <div className="mx-auto w-full max-w-xl rounded-3xl bg-primary p-4 shadow-lg space-y-3">
           <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-2xl border-2 border-primary/20 bg-secondary shadow-sm">
+            <div className="relative h-12 w-12 overflow-hidden rounded-2xl border-2 border-white/30 bg-white/10 shadow-sm">
               {logoUrl ? (
                 <Image
                   src={logoUrl}
@@ -75,32 +69,38 @@ export function MobileStepHeader({
                   className="object-cover"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15 text-xs font-bold text-primary">
+                <div className="flex h-full items-center justify-center text-xs font-bold text-white">
                   {companyName.slice(0, 2).toUpperCase()}
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-slate-900">
+              <p className="truncate text-sm font-bold text-white">
                 Hi {companyName}! 👋
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-xs text-white/70">
                 Let&apos;s set up your LSA campaign together
               </p>
             </div>
             <Badge
               variant="secondary"
-              className="bg-emerald-50 text-emerald-700 border border-emerald-200"
+              className="bg-white/15 text-white border border-white/30"
             >
               Client View
             </Badge>
           </div>
-          <div className="rounded-xl bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-50 border border-indigo-100/60 p-3">
-            <h2 className="text-base font-bold leading-tight text-slate-900">
+          <div>
+            <h2 className="text-base font-bold leading-tight text-white">
               {stepTitle}
             </h2>
-            <p className="text-xs text-slate-600 mt-0.5">{stepDescription}</p>
+            <p className="text-xs text-white/80 mt-0.5">{stepDescription}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Progreso, sobre fondo claro */}
+      <div className="px-4 pt-3">
+        <div className="mx-auto w-full max-w-xl">
           <StepProgressBar currentStep={currentStep} totalSteps={totalSteps} />
         </div>
       </div>

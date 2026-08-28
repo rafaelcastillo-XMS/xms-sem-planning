@@ -423,7 +423,7 @@ export function ClientWizard({
       ) : null}
 
       {currentStep === 5 ? (
-        <CompactStepCard title="Photos & Assets" description="Upload your logo and business photos.">
+        <CompactStepCard title="Photos & Assets" description="Upload your current logo in high quality for branding consistency.">
           <div className="flex items-center gap-2 mb-2">
             <Camera className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-slate-800 tracking-tight">Brand Identity</span>
