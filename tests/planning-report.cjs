@@ -9,26 +9,35 @@ function load(path) {
   new Function('module', 'exports', 'require', code)(module, module.exports, name => name.startsWith('@/') ? load(name.slice(2) + '.ts') : require(name));
   return module.exports;
 }
-const { buildPlanningReport } = load('lib/planning-report.ts');
+const { buildPlanningPdf, planningReportSections } = load('lib/planning-report.ts');
 const { readLogo } = load('lib/logo-upload.ts');
 const { seededSessions } = load('mock-data/planning.ts');
 
-test('report includes all response sections, escapes user text and rejects unsafe logo URLs', () => {
+test('PDF contains the full report and paginates long client responses', () => {
   const session = structuredClone(seededSessions[0]);
   session.status = 'submitted';
-  session.response.finalComment = '<script>alert("x")</script> & final feedback';
+  session.response.finalComment = 'Comentario de José: revisión y aprobación. '.repeat(150);
   session.response.businessHours = [{ day: 'monday', isClosed: false, openTime: '09:00', closeTime: '18:00' }];
   session.response.missingInfoResponses.totalFieldworkers = 17;
-  const html = buildPlanningReport({ name: 'A & B', slug: 'test', id: 'test', logoUrl: 'javascript:alert(1)' }, session);
-  for (const text of ['Services', 'Budget', 'Geo targeting', 'Business hours', '09:00 – 18:00', 'Total fieldworkers', '17', 'Final client comments', 'A &amp; B', '&lt;script&gt;']) assert.ok(html.includes(text), text);
-  assert.ok(!html.includes('<script>'));
-  assert.ok(!html.includes('javascript:'));
-  assert.ok(html.includes('Print / Save as PDF'));
+  const client = { name: 'A & B / José', slug: 'test', id: 'test' };
+  const sections = JSON.stringify(planningReportSections(client, session));
+  for (const text of ['Services', 'Budget', 'Geo targeting', 'Business hours', '09:00 - 18:00', 'Total fieldworkers', '17', 'Final client comments']) assert.ok(sections.includes(text), text);
+  const doc = buildPlanningPdf(client, session);
+  assert.ok(doc.getNumberOfPages() >= 3);
+  const pdf = doc.output('arraybuffer');
+  assert.ok(Buffer.from(pdf).subarray(0, 5).equals(Buffer.from('%PDF-')));
+  if (process.env.PDF_SAMPLE_PATH) fs.writeFileSync(process.env.PDF_SAMPLE_PATH, Buffer.from(pdf));
 });
-test('draft reports never claim a final submission', () => {
+test('PDF generation rejects an unsubmitted planning', () => {
   const session = structuredClone(seededSessions[0]);
   session.status = 'in_review';
-  assert.match(buildPlanningReport({name:'Test',id:'test',slug:'test'},session), /Draft — not yet submitted/);
+  assert.throws(() => buildPlanningPdf({name:'Test',id:'test',slug:'test'},session), /debe enviar el planning/);
+});
+test('invalid logo cannot block the PDF', () => {
+  const session = structuredClone(seededSessions[0]);
+  session.status = 'submitted';
+  const doc = buildPlanningPdf({name:'Test',id:'test',slug:'test'},session,'data:image/png;base64,invalid');
+  assert.ok(doc.getNumberOfPages() > 0);
 });
 test('logo upload rejects unsupported files and oversize images before decoding', async () => {
   await assert.rejects(readLogo({type:'image/svg+xml',size:100}), /PNG, JPEG or WebP/);

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ReportActions } from "@/components/report-actions";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CheckCircle2,
@@ -264,7 +263,6 @@ export function ClientWizard({
               </p>
             </div>
 
-            <ReportActions client={client} session={session} />
             <div className="flex flex-col gap-3 pt-4">
               <Button type="button" className="w-full bg-slate-900 h-12 text-base font-bold" onClick={() => window.close()}>
                 Close Window

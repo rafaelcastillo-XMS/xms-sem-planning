@@ -1,23 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { downloadPlanningReport, printPlanningReport } from "@/lib/planning-report";
 import type { Client, PlanningSession } from "@/types/planning";
 
 export function ReportActions({ client, session }: { client: Client; session: PlanningSession }) {
   const [error, setError] = useState("");
-  if (session.status !== "submitted") return null;
+  const [downloading, setDownloading] = useState(false);
+  const busy = useRef(false);
+  const submitted = session.status === "submitted";
   return <div className="space-y-2">
-    <div className="flex flex-wrap justify-center gap-2">
-      <Button type="button" variant="outline" onClick={() => downloadPlanningReport(client, session)}>Download report (HTML)</Button>
-      <Button type="button" onClick={() => {
+    <div className="flex justify-end">
+      <Button type="button" disabled={!submitted || downloading} onClick={async () => {
+        if (busy.current) return;
+        busy.current = true;
         setError("");
-        try { printPlanningReport(client, session); }
-        catch (e) { setError(e instanceof Error ? e.message : "Could not open report."); }
-      }}>Print / Save as PDF</Button>
+        setDownloading(true);
+        try {
+          const { downloadPlanningPdf } = await import("@/lib/planning-report");
+          await downloadPlanningPdf(client, session);
+        } catch {
+          setError("No se pudo descargar el PDF. Inténtalo nuevamente.");
+        } finally {
+          busy.current = false;
+          setDownloading(false);
+        }
+      }}>
+        {downloading ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Download aria-hidden="true" className="mr-2 h-4 w-4" />}
+        {downloading ? "Generando PDF…" : "Descargar PDF"}
+      </Button>
     </div>
-    <p className="text-xs text-muted-foreground">For PDF, choose “Save as PDF” in the print dialog.</p>
+    {!submitted && <p className="text-right text-xs text-muted-foreground">Disponible cuando el cliente envíe el planning.</p>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </div>;
 }

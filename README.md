@@ -31,11 +31,12 @@ URL logos remain supported. The logo is persisted only when the planning is save
 removing it clears the stored value. This approach is intended for small logos,
 not photo galleries. Supabase Storage is the next step for larger assets.
 
-After final submission, both the client confirmation screen and the admin Results
-tab offer a standalone HTML report and **Print / Save as PDF**. Select “Save as
-PDF” in the browser print dialog. Reports include the proposal, logo, decisions,
+The admin **Results** tab offers a single **Descargar PDF** button. It remains
+visible but disabled until the client submits the planning. Clicking it downloads
+an A4 PDF directly, with no print dialog or HTML export. The client view does not
+show report download controls. Reports include the proposal, logo, decisions,
 comments, budgets, locations, business hours, profile and team information.
-HTML reports escape user input and PDF printing uses A4 print styles.
+PDF generation is loaded on demand and supports pagination for long responses.
 
 Planning creation writes the full proposal and initial response in the first
 session insert. Create, edit, draft-save and final-submit flows await Supabase;
