@@ -41,11 +41,11 @@ export default function ClientSlugPage() {
   }
 
   const saveDraft = (values: ClientResponseFormValues) => {
-    updateSessionResponse(session.id, values, session.status === "draft" ? "in_review" : session.status);
+    return updateSessionResponse(session.id, values, session.status === "draft" ? "in_review" : session.status);
   };
 
   const submitFinal = (values: ClientResponseFormValues) => {
-    submitSession(session.id, values);
+    return submitSession(session.id, values);
   };
 
   return <ClientWizard client={client} session={session} onSaveDraft={saveDraft} onSubmitFinal={submitFinal} />;

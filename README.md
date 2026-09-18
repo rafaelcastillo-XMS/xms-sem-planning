@@ -20,3 +20,46 @@ This application is for **internal use only** at **XMS Ai** and is exclusive to 
 - react-hook-form + zod
 - lucide-react
 
+
+## Planning logos and reports
+
+The planning builder accepts PNG, JPEG and WebP logos (up to 5 MB). The browser
+resizes the image to at most 512 × 512 pixels, preserves transparency, and saves
+its PNG data URL in the existing `sem_clients.logo_url` text column. No database
+migration, Storage bucket, Drive connection or new secret is required. Existing
+URL logos remain supported. The logo is persisted only when the planning is saved;
+removing it clears the stored value. This approach is intended for small logos,
+not photo galleries. Supabase Storage is the next step for larger assets.
+
+After final submission, both the client confirmation screen and the admin Results
+tab offer a standalone HTML report and **Print / Save as PDF**. Select “Save as
+PDF” in the browser print dialog. Reports include the proposal, logo, decisions,
+comments, budgets, locations, business hours, profile and team information.
+HTML reports escape user input and PDF printing uses A4 print styles.
+
+Planning creation writes the full proposal and initial response in the first
+session insert. Create, edit, draft-save and final-submit flows await Supabase;
+failed saves retain the form and show an error instead of reporting success.
+
+### Verification
+
+- `npm run lint`
+- `npx tsc --noEmit`
+- `npm run build`
+- `node --test tests/planning-report.cjs`
+- Optional live check: `node --env-file=.env.local tests/supabase-logo-smoke.cjs`
+  creates a uniquely named temporary client, checks logo persistence/removal and
+  deletes only that test record.
+
+### Existing limitations identified during review
+
+- Client wizard asset inputs record filenames only; the underlying client photos
+  and client-provided asset files are not uploaded. This is separate from the
+  planning builder logo attachment implemented above.
+- The app has no administrator sign-in and uses the public Supabase client for
+  CRUD. Deployment access and database authorization need a separate review
+  before treating it as a private multi-user service.
+- The provider still loads the full client/session collection; inline logos add
+  to that payload. For a larger deployment, use scoped queries and Storage.
+- Deployment uses Next.js standalone/Docker. Historical failed GitHub Pages runs
+  do not verify the current Docker deployment.

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { readLogo } from "@/lib/logo-upload";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Eye, Save, X, Check, Info, Briefcase, DollarSign, MapPin, ClipboardCheck, Zap, Link as LinkIcon } from "lucide-react";
@@ -19,7 +21,7 @@ import {
 
 interface AdminPlanningFormProps {
   defaultValues: PlanningBuilderValues;
-  onSubmit: (values: PlanningBuilderValues) => void;
+  onSubmit: (values: PlanningBuilderValues) => void | Promise<void>;
   submitLabel?: string;
   publicPath?: string;
   onPreview?: () => void;
@@ -43,6 +45,8 @@ export function AdminPlanningForm({
   isSlugLocked = false,
   isSuccess = false
 }: AdminPlanningFormProps) {
+  const [readingLogo, setReadingLogo] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const form = useForm<PlanningBuilderValues>({
     resolver: zodResolver(planningBuilderSchema),
     defaultValues,
@@ -52,7 +56,10 @@ export function AdminPlanningForm({
   const { register, handleSubmit, formState } = form;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 pb-20 md:grid-cols-[1fr_340px]">
+    <form onSubmit={handleSubmit(async (values) => {
+      setSaveError("");
+      try { await onSubmit(values); } catch { setSaveError("Could not save to Supabase. Please try again. Your changes are still here."); }
+    })} className="grid gap-6 pb-20 md:grid-cols-[1fr_340px]">
       <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-700">
         <Card className="premium-card">
           <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
@@ -89,8 +96,24 @@ export function AdminPlanningForm({
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="logoUrl" className="text-xs font-semibold uppercase text-slate-500">Logo URL</Label>
-              <Input id="logoUrl" placeholder="https://..." {...register("logoUrl")} className="bg-white/50" />
+              <Label htmlFor="logoFile" className="text-xs font-semibold uppercase text-slate-500">Company logo</Label>
+              <Input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp" disabled={readingLogo || formState.isSubmitting} onChange={async (event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                setReadingLogo(true);
+                form.clearErrors("logoUrl");
+                try { form.setValue("logoUrl", await readLogo(file), { shouldDirty: true, shouldValidate: true }); }
+                catch (error) { form.setError("logoUrl", { message: error instanceof Error ? error.message : "Could not read image." }); }
+                finally { setReadingLogo(false); }
+              }} />
+              <p className="text-xs text-muted-foreground">PNG, JPEG or WebP, up to 5 MB. Saved with this planning when you save.</p>
+              {readingLogo && <p role="status" className="text-xs">Preparing image…</p>}
+              {form.watch("logoUrl") && <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.watch("logoUrl")} alt="Company logo preview" className="h-20 w-20 rounded-lg border object-contain" />
+                <Button type="button" variant="outline" disabled={readingLogo || formState.isSubmitting} onClick={() => { form.setValue("logoUrl", "", { shouldDirty: true, shouldValidate: true }); }}>Remove logo</Button>
+              </div>}
               <FieldError message={formState.errors.logoUrl?.message} />
             </div>
 
@@ -248,10 +271,10 @@ export function AdminPlanningForm({
                 "w-full transition-all active:scale-[0.98] font-bold",
                 isSuccess ? "bg-emerald-600 hover:bg-emerald-600 shadow-emerald-200" : "bg-primary hover:bg-primary/90 shadow-primary/20"
               )}
-              disabled={formState.isSubmitting}
+              disabled={formState.isSubmitting || readingLogo}
             >
               {isSuccess ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-              {isSuccess ? "Changes saved" : submitLabel}
+              {formState.isSubmitting ? "Saving…" : isSuccess ? "Changes saved" : submitLabel}
             </Button>
             {onPreview ? (
               <Button type="button" variant="outline" className="w-full bg-white transition-all active:scale-[0.98] font-medium border-slate-200" onClick={onPreview}>
@@ -266,9 +289,10 @@ export function AdminPlanningForm({
               </Button>
             ) : null}
 
+            {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
             <div className="pt-2">
               <p className="text-[10px] text-center text-muted-foreground leading-tight px-2">
-                Changes are encrypted and stored in local state for this MVP session.
+                Changes and the attached logo are saved to Supabase.
               </p>
             </div>
           </CardContent>

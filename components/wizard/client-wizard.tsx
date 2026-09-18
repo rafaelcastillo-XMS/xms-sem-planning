@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { ReportActions } from "@/components/report-actions";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CheckCircle2,
@@ -50,8 +51,8 @@ import { Client, PlanningSession, ProposalSection } from "@/types/planning";
 interface ClientWizardProps {
   client: Client;
   session: PlanningSession;
-  onSaveDraft: (values: ClientResponseFormValues) => void;
-  onSubmitFinal: (values: ClientResponseFormValues) => void;
+  onSaveDraft: (values: ClientResponseFormValues) => void | Promise<void>;
+  onSubmitFinal: (values: ClientResponseFormValues) => void | Promise<void>;
 }
 
 // Ajuste #9 — Se inserta el paso "team" (fieldworkers) en posición 8.
@@ -96,6 +97,8 @@ export function ClientWizard({
   const { width, height } = useWindowSize();
   const [currentStep, setCurrentStep] = useState(1);
   const [stepError, setStepError] = useState<string | null>(null);
+  const saving = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [submitted, setSubmitted] = useState(session.status === "submitted");
 
   const form = useForm<ClientResponseFormValues>({
@@ -205,17 +208,28 @@ export function ClientWizard({
     const valid = await validateStep();
     if (!valid) return;
 
-    const snapshot = getValues();
-    onSaveDraft(snapshot);
-
-    // El último paso ahora es TOTAL_STEPS (Review & Submit)
-    if (currentStep === TOTAL_STEPS) {
-      onSubmitFinal(snapshot);
-      setSubmitted(true);
-      return;
+    if (saving.current) return;
+    saving.current = true;
+    setIsSaving(true);
+    try {
+      const snapshot = getValues();
+      if (currentStep === TOTAL_STEPS) {
+        if (!await trigger()) {
+          setStepError("Please review your answers and correct the highlighted fields before submitting.");
+          return;
+        }
+        await onSubmitFinal(snapshot);
+        setSubmitted(true);
+      } else {
+        await onSaveDraft(snapshot);
+        setCurrentStep((step) => Math.min(TOTAL_STEPS, step + 1));
+      }
+    } catch {
+      setStepError("Could not save your answers. Please try again before continuing.");
+    } finally {
+      saving.current = false;
+      setIsSaving(false);
     }
-
-    setCurrentStep((step) => Math.min(TOTAL_STEPS, step + 1));
   };
 
   if (submitted) {
@@ -250,6 +264,7 @@ export function ClientWizard({
               </p>
             </div>
 
+            <ReportActions client={client} session={session} />
             <div className="flex flex-col gap-3 pt-4">
               <Button type="button" className="w-full bg-slate-900 h-12 text-base font-bold" onClick={() => window.close()}>
                 Close Window
@@ -276,9 +291,10 @@ export function ClientWizard({
           stepDescription={currentStepMeta.description}
         />
       }
-      onBack={currentStep > 1 ? handleBack : undefined}
+      onBack={currentStep > 1 && !isSaving ? handleBack : undefined}
       onNext={handleNext}
-      nextLabel={currentStep === TOTAL_STEPS ? "Submit and Process" : "Continue"}
+      disableNext={isSaving}
+      nextLabel={isSaving ? "Saving…" : currentStep === TOTAL_STEPS ? "Submit and Process" : "Continue"}
     >
       {stepError ? (
         <Card className="border-amber-300 bg-amber-50">

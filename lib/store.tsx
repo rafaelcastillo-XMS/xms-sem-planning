@@ -48,15 +48,15 @@ interface PlanningStoreContextValue {
   getSessionById: (id: string) => PlanningSession | undefined;
   getSessionBySlug: (slug: string) => PlanningSession | undefined;
   isSlugAvailable: (slug: string, excludeClientId?: string) => boolean;
-  updateClient: (clientId: string, patch: Partial<Client>) => void;
-  createPlanning: (input: NewPlanningInput) => PlanningSession;
-  updateSessionProposal: (sessionId: string, proposal: PlanningProposal) => void;
+  updateClient: (clientId: string, patch: Partial<Client>) => Promise<void>;
+  createPlanning: (input: NewPlanningInput) => Promise<PlanningSession>;
+  updateSessionProposal: (sessionId: string, proposal: PlanningProposal) => Promise<void>;
   updateSessionResponse: (
     sessionId: string,
     response: ClientResponse,
     status?: PlanningStatus
-  ) => void;
-  submitSession: (sessionId: string, response: ClientResponse) => void;
+  ) => Promise<void>;
+  submitSession: (sessionId: string, response: ClientResponse) => Promise<void>;
   deletePlanning: (sessionId: string) => void;
   resetSeedData: () => void;
 }
@@ -258,21 +258,17 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
     [clients]
   );
 
-  const updateClient = useCallback((clientId: string, patch: Partial<Client>) => {
-    setClients((prev) =>
-      prev.map((client) => {
-        if (client.id !== clientId) return client;
-        const next = { ...client, ...patch };
-        persist("updateClient", () =>
-          supabase.from(CLIENTS_TABLE).update(clientToRow(next)).eq("id", clientId)
-        );
-        return next;
-      })
-    );
-  }, []);
+  const updateClient = useCallback(async (clientId: string, patch: Partial<Client>) => {
+    const client = clients.find((entry) => entry.id === clientId);
+    if (!client) throw new Error("Client not found");
+    const next = { ...client, ...patch };
+    const { error, data } = await supabase.from(CLIENTS_TABLE).update(clientToRow(next)).eq("id", clientId).select("id").single();
+    if (error || !data) throw error ?? new Error("Client not saved");
+    setClients((prev) => prev.map((entry) => entry.id === clientId ? next : entry));
+  }, [clients]);
 
   const createPlanning = useCallback(
-    (input: NewPlanningInput) => {
+    async (input: NewPlanningInput) => {
       const baseSlug = slugify(input.slug || input.clientName);
       let uniqueSlug = baseSlug;
       let counter = 1;
@@ -290,26 +286,26 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
         logoUrl: input.logoUrl || undefined
       };
 
-      const templateProposal = clone(initialSeed.sessions[0].proposal);
+      const templateProposal = input.proposal ?? clone(initialSeed.sessions[0].proposal);
       const session: PlanningSession = {
         id: uid("plan"),
         clientId: client.id,
-        status: "draft",
+        status: "in_review",
         proposal: templateProposal,
         response: createEmptyClientResponse(templateProposal),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
+      const clientRes = await supabase.from(CLIENTS_TABLE).insert(clientToRow(client));
+      if (clientRes.error) throw clientRes.error;
+      const sessionRes = await supabase.from(SESSIONS_TABLE).insert(sessionToRow(session));
+      if (sessionRes.error) {
+        await supabase.from(CLIENTS_TABLE).delete().eq("id", client.id);
+        throw sessionRes.error;
+      }
       setClients((prev) => [client, ...prev]);
       setSessions((prev) => [session, ...prev]);
-
-      // Insert client first (FK), then session.
-      persist("createPlanning", async () => {
-        const clientRes = await supabase.from(CLIENTS_TABLE).insert(clientToRow(client));
-        if (clientRes.error) return clientRes;
-        return supabase.from(SESSIONS_TABLE).insert(sessionToRow(session));
-      });
 
       return session;
     },
@@ -317,26 +313,26 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const updateSessionProposal = useCallback(
-    (sessionId: string, proposal: PlanningProposal) => {
+    async (sessionId: string, proposal: PlanningProposal) => {
       const updatedAt = new Date().toISOString();
+      const patch = { proposal, updated_at: updatedAt };
+      const { error, data } = await supabase.from(SESSIONS_TABLE).update(patch).eq("id", sessionId).select("id").single();
+      if (error || !data) throw error ?? new Error("Planning not saved");
       setSessions((prev) =>
         prev.map((session) =>
           session.id === sessionId ? { ...session, proposal, updatedAt } : session
         )
-      );
-      persist("updateSessionProposal", () =>
-        supabase
-          .from(SESSIONS_TABLE)
-          .update({ proposal, updated_at: updatedAt })
-          .eq("id", sessionId)
       );
     },
     []
   );
 
   const updateSessionResponse = useCallback(
-    (sessionId: string, response: ClientResponse, status?: PlanningStatus) => {
+    async (sessionId: string, response: ClientResponse, status?: PlanningStatus) => {
       const updatedAt = new Date().toISOString();
+      const patch = { response, updated_at: updatedAt, ...(status ? { status } : {}) };
+      const { error, data } = await supabase.from(SESSIONS_TABLE).update(patch).eq("id", sessionId).select("id").single();
+      if (error || !data) throw error ?? new Error("Planning not saved");
       setSessions((prev) =>
         prev.map((session) =>
           session.id === sessionId
@@ -349,17 +345,15 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
             : session
         )
       );
-      persist("updateSessionResponse", () => {
-        const patch: Record<string, unknown> = { response, updated_at: updatedAt };
-        if (status) patch.status = status;
-        return supabase.from(SESSIONS_TABLE).update(patch).eq("id", sessionId);
-      });
     },
     []
   );
 
-  const submitSession = useCallback((sessionId: string, response: ClientResponse) => {
+  const submitSession = useCallback(async (sessionId: string, response: ClientResponse) => {
     const now = new Date().toISOString();
+    const patch = { response, status: "submitted", submitted_at: now, updated_at: now };
+    const { error, data } = await supabase.from(SESSIONS_TABLE).update(patch).eq("id", sessionId).select("id").single();
+    if (error || !data) throw error ?? new Error("Planning not saved");
     setSessions((prev) =>
       prev.map((session) =>
         session.id === sessionId
@@ -372,17 +366,6 @@ export function PlanningStoreProvider({ children }: { children: ReactNode }) {
             }
           : session
       )
-    );
-    persist("submitSession", () =>
-      supabase
-        .from(SESSIONS_TABLE)
-        .update({
-          response,
-          status: "submitted",
-          submitted_at: now,
-          updated_at: now
-        })
-        .eq("id", sessionId)
     );
   }, []);
 

@@ -166,6 +166,7 @@ export interface PlanningSeedState {
 }
 
 export interface NewPlanningInput {
+  proposal?: PlanningProposal;
   clientName: string;
   slug: string;
   logoUrl?: string;

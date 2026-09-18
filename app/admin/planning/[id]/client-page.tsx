@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Laptop, FileText } from "lucide-react";
 
+import { ReportActions } from "@/components/report-actions";
 import { AppShell } from "@/components/app-shell";
 import { AdminPlanningForm } from "@/components/admin/admin-planning-form";
 import { ClientResponseView } from "@/components/admin/client-response-view";
@@ -56,7 +57,7 @@ export default function AdminPlanningDetailPage() {
 
   const isSlugLocked = session.status !== "draft";
 
-  const handleSubmit = (values: PlanningBuilderValues) => {
+  const handleSubmit = async (values: PlanningBuilderValues) => {
     const nextSlug = slugify(values.slug || values.clientName);
 
     // If slug changed, check if it's available
@@ -65,14 +66,14 @@ export default function AdminPlanningDetailPage() {
       return;
     }
 
-    updateClient(client.id, {
+    await updateClient(client.id, {
       name: values.clientName,
       slug: isSlugLocked ? client.slug : nextSlug,
       logoUrl: values.logoUrl || undefined
     });
 
     const proposal = builderValuesToProposal(values, session.proposal);
-    updateSessionProposal(session.id, proposal);
+    await updateSessionProposal(session.id, proposal);
 
     const filteredResponse = {
       ...session.response,
@@ -87,7 +88,7 @@ export default function AdminPlanningDetailPage() {
       }
     };
 
-    updateSessionResponse(
+    await updateSessionResponse(
       session.id,
       filteredResponse,
       session.status === "draft" ? "in_review" : session.status
@@ -153,7 +154,7 @@ export default function AdminPlanningDetailPage() {
             isSuccess={isSuccess}
           />
         ) : (
-          <ClientResponseView session={session} />
+          <div className="space-y-4"><ReportActions client={client} session={session} /><ClientResponseView session={session} /></div>
         )}
       </div>
     </AppShell>

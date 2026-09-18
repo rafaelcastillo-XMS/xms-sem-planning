@@ -10,6 +10,7 @@ interface ClientResponseViewProps {
 
 export function ClientResponseView({ session }: ClientResponseViewProps) {
   const { response, proposal } = session;
+  if (session.status !== "submitted") return <Card><CardContent className="p-6 text-sm text-muted-foreground">This client has not submitted the final planning yet.</CardContent></Card>;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">

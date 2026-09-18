@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { AdminPlanningForm } from "@/components/admin/admin-planning-form";
 import { Button } from "@/components/ui/button";
-import { createFreshResponse, createProposalFromBuilder, sessionToBuilderValues } from "@/lib/planning-mappers";
+import { createProposalFromBuilder, sessionToBuilderValues } from "@/lib/planning-mappers";
 import { usePlanningStore } from "@/lib/store";
 import { slugify } from "@/lib/utils";
 import { PlanningBuilderValues } from "@/lib/validators";
@@ -16,7 +16,7 @@ import { ChevronLeft } from "lucide-react";
 
 export default function NewPlanningPage() {
   const router = useRouter();
-  const { sessions, getClientById, createPlanning, updateSessionProposal, updateSessionResponse } =
+  const { sessions, getClientById, createPlanning } =
     usePlanningStore();
 
   const initialValues = useMemo<PlanningBuilderValues>(() => {
@@ -54,18 +54,13 @@ export default function NewPlanningPage() {
     };
   }, [sessions, getClientById]);
 
-  const handleSubmit = (values: PlanningBuilderValues) => {
-    const session = createPlanning({
+  const handleSubmit = async (values: PlanningBuilderValues) => {
+    const session = await createPlanning({
+      proposal: createProposalFromBuilder(values),
       clientName: values.clientName,
       slug: slugify(values.slug || values.clientName),
       logoUrl: values.logoUrl || undefined
     });
-
-    const proposal = createProposalFromBuilder(values);
-    const response = createFreshResponse(proposal);
-
-    updateSessionProposal(session.id, proposal);
-    updateSessionResponse(session.id, response, "in_review");
 
     router.push(`/admin/planning/${session.id}`);
   };
