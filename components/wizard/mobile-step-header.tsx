@@ -13,8 +13,7 @@ interface MobileStepHeaderProps {
   totalSteps: number;
 }
 
-// Header inspirado en apps móviles: bloque azul sólido de marca,
-// redondeado, flotando sobre fondo claro (no fondo azul en toda la pantalla).
+// Dark client hero with decorative highlights and high-contrast text.
 export function MobileStepHeader({
   logoUrl,
   companyName,
@@ -55,18 +54,20 @@ export function MobileStepHeader({
         </div>
       </div>
 
-      {/* Hero: bloque sólido azul de marca */}
+      {/* Client hero */}
       <div className="mx-4">
-        <div className="mx-auto w-full max-w-xl rounded-3xl bg-primary p-4 shadow-lg space-y-3">
+        <div className="relative isolate mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-slate-700/70 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-5 text-white shadow-xl shadow-slate-900/20 sm:p-6">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 -z-10 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-16 -z-10 h-48 w-48 rounded-full bg-indigo-500/15 blur-3xl" />
           <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-2xl border-2 border-white/30 bg-white/10 shadow-sm">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg">
               {logoUrl ? (
                 <Image
                   src={logoUrl}
                   alt={companyName}
                   fill
                   sizes="48px"
-                  className="object-cover"
+                  className="bg-white object-contain p-1"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs font-bold text-white">
@@ -78,22 +79,26 @@ export function MobileStepHeader({
               <p className="truncate text-sm font-bold text-white">
                 Hi {companyName}! 👋
               </p>
-              <p className="truncate text-xs text-white/70">
+              <p className="mt-1 text-xs leading-relaxed text-slate-300">
                 Let&apos;s set up your LSA campaign together
               </p>
             </div>
             <Badge
               variant="secondary"
-              className="bg-white/15 text-white border border-white/30"
+              className="shrink-0 border border-blue-300/25 bg-blue-400/10 text-[10px] font-medium text-blue-100 hover:bg-blue-400/10"
             >
               Client View
             </Badge>
           </div>
-          <div>
-            <h2 className="text-base font-bold leading-tight text-white">
+          <div className="mt-4 border-t border-white/10 pt-4">
+            <p className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-200">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-blue-300 shadow-[0_0_10px_rgba(147,197,253,0.6)]" />
+              Step {currentStep} of {totalSteps}
+            </p>
+            <h2 className="text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl">
               {stepTitle}
             </h2>
-            <p className="text-xs text-white/80 mt-0.5">{stepDescription}</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300 sm:text-sm">{stepDescription}</p>
           </div>
         </div>
       </div>
