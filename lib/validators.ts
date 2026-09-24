@@ -45,7 +45,7 @@ export const businessHourSchema = z
 
 export const clientResponseSchema = z.object({
   introAcknowledged: z.boolean(),
-  services: decisionSchema,
+  services: decisionSchema.extend({ selectedServices: z.array(z.string()).optional() }),
   budget: decisionSchema.extend({
     requestedBudgetNote: z
       .string()

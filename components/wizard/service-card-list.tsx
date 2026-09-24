@@ -1,37 +1,29 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SelectionTile } from "@/components/wizard/selection-tile";
 
 interface ServiceCardListProps {
   selected: string[];
   recommended: string[];
+  chosen: string[];
+  onToggle: (service: string) => void;
 }
 
-export function ServiceCardList({ selected, recommended }: ServiceCardListProps) {
+export function ServiceCardList({ selected, recommended, chosen, onToggle }: ServiceCardListProps) {
+  const groups = [
+    { title: "Your plan", options: [...new Set(selected)] },
+    { title: "Also recommended", options: [...new Set(recommended)].filter(item => !selected.includes(item)) }
+  ];
   return (
-    <div className="grid gap-3">
-      <Card className="border-primary/20 bg-primary/5">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Services selected by SEM team</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {selected.map((service) => (
-            <Badge key={service}>{service}</Badge>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="border-amber-300/50 bg-amber-50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Additional recommended services</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {recommended.map((service) => (
-            <Badge key={service} variant="secondary" className="bg-amber-100 text-amber-900">
-              {service}
-            </Badge>
-          ))}
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <p className="text-sm leading-relaxed text-slate-600">Choose what you want to promote. Tap an option to select or remove it.</p>
+      {groups.filter(group => group.options.length > 0).map(group => (
+        <fieldset key={group.title}>
+          <legend className="mb-3 text-sm font-bold text-slate-900">{group.title}</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {group.options.map(service => <SelectionTile key={service} label={service} selected={chosen.includes(service)} onToggle={() => onToggle(service)} />)}
+          </div>
+        </fieldset>
+      ))}
+      <p role="status" className="text-sm font-medium text-primary">{chosen.length} selected</p>
     </div>
   );
 }

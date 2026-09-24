@@ -41,7 +41,7 @@ export default function ClientSlugPage() {
   }
 
   const saveDraft = (values: ClientResponseFormValues) => {
-    return updateSessionResponse(session.id, values, session.status === "draft" ? "in_review" : session.status);
+    return updateSessionResponse(session.id, values, "in_review");
   };
 
   const submitFinal = (values: ClientResponseFormValues) => {

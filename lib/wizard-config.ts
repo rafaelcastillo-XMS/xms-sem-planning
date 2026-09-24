@@ -27,49 +27,36 @@ export const WIZARD_STEPS: WizardStep[] = [
   },
   {
     id: 5,
-    section: "assets",
-    title: "Photos & Assets",
-    description: "Upload logo and business photos"
-  },
-  {
-    id: 6,
-    section: "hours",
-    title: "Business Hours",
-    description: "Set weekend and holiday hours"
-  },
-  {
-    id: 7,
     section: "bio",
     title: "Business Bio",
     description: "Choose up to 6 categories"
   },
-  // Ajuste #9 — Nueva ventana: información de equipo (fieldworkers)
   {
-    id: 8,
+    id: 6,
     section: "team",
     title: "Team Information",
     description: "Tell us about your active field team"
   },
   {
-    id: 9,
+    id: 7,
     section: "ads",
     title: "Ads Preview",
     description: "Leave optional ad feedback"
   },
   {
-    id: 10,
+    id: 8,
     section: "recommendations",
     title: "SEM Team Recommendations",
     description: "Notes and recommendations from our SEM team"
   },
   {
-    id: 11,
+    id: 9,
     section: "comments",
     title: "Additional Comments",
     description: "Share anything else before submission"
   },
   {
-    id: 12,
+    id: 10,
     section: "review",
     title: "Review & Submit",
     description: "Final check before submission"
@@ -91,16 +78,6 @@ export const REVIEW_SECTIONS: ReviewSection[] = [
     id: "geo",
     title: "Geo Target",
     description: "Preferred areas and notes"
-  },
-  {
-    id: "assets",
-    title: "Photos & Assets",
-    description: "Uploaded files and comments"
-  },
-  {
-    id: "hours",
-    title: "Business Hours",
-    description: "Operating schedule"
   },
   {
     id: "bio",

@@ -1,8 +1,6 @@
 import { ReactNode } from "react";
-import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-import { publicAsset } from "@/lib/utils";
 
 interface WizardLayoutProps {
   header: ReactNode;
@@ -15,9 +13,6 @@ interface WizardLayoutProps {
   hideActions?: boolean;
 }
 
-// Ajustes #10 + #11
-// - Footer con logos XMS y Google Partner (branding consistente en cada paso)
-// - Botón "Continue" con gradiente más amigable
 export function WizardLayout({
   header,
   children,
@@ -33,28 +28,7 @@ export function WizardLayout({
       {header}
       <div className="mx-auto w-full max-w-xl space-y-4 px-4 py-4 pb-36">
         {children}
-        {/* Footer de branding (visible al final del contenido) */}
-        <div className="pt-6 pb-2 flex items-center justify-center gap-4 opacity-80">
-          <div className="relative h-7 w-24">
-            <Image
-              src={publicAsset("/logo.png")}
-              alt="XMS Ai"
-              fill
-              sizes="96px"
-              className="object-contain"
-            />
-          </div>
-          <span className="text-slate-300">·</span>
-          <div className="relative h-7 w-24">
-            <Image
-              src={publicAsset("/google-partner.png")}
-              alt="Google Partner"
-              fill
-              sizes="96px"
-              className="object-contain"
-            />
-          </div>
-        </div>
+
       </div>
       {!hideActions ? (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-white/95 p-4 backdrop-blur-md">

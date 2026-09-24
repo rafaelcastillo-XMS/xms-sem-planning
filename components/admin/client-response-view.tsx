@@ -42,6 +42,7 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
                   {response.services.decision === 'accept' ? 'Accepted' : 'Changes Requested'}
                 </Badge>
               </div>
+              <p className="mt-2 text-sm text-slate-700">{(response.services.selectedServices ?? proposal.services.selected).join(", ") || "None selected"}</p>
               {response.services.comment && (
                 <p className="mt-2 text-sm text-slate-600 italic bg-slate-50 p-2 rounded-lg border border-slate-100">
                   &quot;{response.services.comment}&quot;

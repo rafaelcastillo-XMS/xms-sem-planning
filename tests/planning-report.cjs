@@ -56,3 +56,17 @@ test('logo is resized to 512 pixels and bitmap is released', async () => {
   delete global.createImageBitmap;
   delete global.document;
 });
+
+test('client service selections survive validation and appear in the report, including legacy responses', () => {
+  const { clientResponseSchema } = load('lib/validators.ts');
+  const session = structuredClone(seededSessions[0]);
+  const client = { name: 'Test', id: 'test', slug: 'test' };
+  const selectedRow = () => planningReportSections(client, session)
+    .find(section => section.title === 'Services').rows.find(([label]) => label === 'Client selected services')[1];
+  assert.deepEqual(selectedRow(), session.proposal.services.selected);
+  session.response.services.selectedServices = ['New chosen service'];
+  session.response = clientResponseSchema.parse(session.response);
+  assert.deepEqual(selectedRow(), ['New chosen service']);
+  session.response.services.selectedServices = [];
+  assert.deepEqual(selectedRow(), []);
+});

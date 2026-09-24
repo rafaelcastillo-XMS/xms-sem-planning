@@ -7,11 +7,8 @@ import {
   TriangleAlert,
   User,
   Users,
-  Briefcase,
   DollarSign,
   MapPin,
-  Camera,
-  Clock,
   Type,
   Megaphone,
   Lightbulb,
@@ -27,13 +24,11 @@ import { useWindowSize } from "react-use";
 import { AdsPreviewCard } from "@/components/wizard/ads-preview-card";
 import { BioCategorySelector } from "@/components/wizard/bio-category-selector";
 import { BudgetSummaryCard } from "@/components/wizard/budget-summary-card";
-import { BusinessHoursEditor } from "@/components/wizard/business-hours-editor";
 import { CompactStepCard } from "@/components/wizard/compact-step-card";
 import { DecisionCardGroup } from "@/components/wizard/decision-card-group";
 import { GeoTargetSelector } from "@/components/wizard/geo-target-selector";
 import { MobileStepHeader } from "@/components/wizard/mobile-step-header";
 import { ServiceCardList } from "@/components/wizard/service-card-list";
-import { UploadDropzoneOrInput } from "@/components/wizard/upload-dropzone-or-input";
 import { WizardLayout } from "@/components/wizard/wizard-layout";
 import { ReviewSectionCard } from "@/components/review/review-section-card";
 import { Button } from "@/components/ui/button";
@@ -54,38 +49,11 @@ interface ClientWizardProps {
   onSubmitFinal: (values: ClientResponseFormValues) => void | Promise<void>;
 }
 
-// Ajuste #9 — Se inserta el paso "team" (fieldworkers) en posición 8.
-//             Ads, recommendations y review se desplazan +1.
-const SECTION_TO_STEP: Record<ProposalSection, number> = {
-  overview: 1,
-  services: 2,
-  budget: 3,
-  geo: 4,
-  assets: 5,
-  hours: 6,
-  bio: 7,
-  team: 8,
-  ads: 9,
-  recommendations: 10,
-  comments: 11,
-  review: 12
-};
+const SECTION_TO_STEP = Object.fromEntries(
+  WIZARD_STEPS.map(step => [step.section, step.id])
+) as Record<ProposalSection, number>;
 
 const TOTAL_STEPS = WIZARD_STEPS.length;
-
-const getRequirementText = (value?: string) => value || "Provided by the SEM team.";
-
-const formatPhotoRequirements = (requirement: PlanningSession["proposal"]["assetRequirements"][number]) => {
-  const parts = [
-    requirement.acceptedFileTypes.length
-      ? `Images must be submitted in ${requirement.acceptedFileTypes.join(", ")} format`
-      : null,
-    requirement.minResolution ? `minimum required resolution is ${requirement.minResolution.replace("x", " x ")} pixels` : null,
-    requirement.maxSizeMb ? `maximum file size allowed is ${requirement.maxSizeMb} MB` : null
-  ].filter(Boolean);
-
-  return parts.length ? `Photo requirements: ${parts.join(", ")}.` : "";
-};
 
 export function ClientWizard({
   client,
@@ -98,6 +66,7 @@ export function ClientWizard({
   const [stepError, setStepError] = useState<string | null>(null);
   const saving = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [closeRequested, setCloseRequested] = useState(false);
   const [submitted, setSubmitted] = useState(session.status === "submitted");
 
   const form = useForm<ClientResponseFormValues>({
@@ -123,11 +92,6 @@ export function ClientWizard({
   const values = watch();
 
   const currentStepMeta = WIZARD_STEPS[currentStep - 1];
-  const logoRequirement = session.proposal.assetRequirements.find((item) => item.id === "logo");
-  const photoRequirement = session.proposal.assetRequirements.find(
-    (item) => item.id === "business-photos"
-  );
-
   const validateStep = async () => {
     setStepError(null);
 
@@ -137,7 +101,13 @@ export function ClientWizard({
     }
 
     if (currentStep === 2) {
-      return trigger(["services.decision", "services.comment"]);
+      const selected = getValues("services.selectedServices") ?? session.proposal.services.selected;
+      if (!selected.length) {
+        setStepError("Please select at least one service to promote.");
+        return false;
+      }
+      setValue("services.selectedServices", selected);
+      return trigger(["services.decision", "services.selectedServices"]);
     }
 
     if (currentStep === 3) {
@@ -154,14 +124,6 @@ export function ClientWizard({
     }
 
     if (currentStep === 5) {
-      return trigger(["assets.logoFileName", "assets.photos", "assets.comment"]);
-    }
-
-    if (currentStep === 6) {
-      return trigger(["businessHours", "hoursNotes"]);
-    }
-
-    if (currentStep === 7) {
       const ok = await trigger(["businessBioSelection"]);
       if (!ok) return false;
       if (getValues("businessBioSelection").length === 0) {
@@ -171,8 +133,7 @@ export function ClientWizard({
       return true;
     }
 
-    // Ajuste #9 — Step 8: Team Information (fieldworkers). Validación de número >= 1.
-    if (currentStep === 8) {
+    if (currentStep === 6) {
       const value = Number(getValues("missingInfoResponses.totalFieldworkers") ?? 0);
       if (!value || Number.isNaN(value) || value < 1) {
         setStepError("Please enter the total number of fieldworkers (1 or more).");
@@ -181,17 +142,15 @@ export function ClientWizard({
       return true;
     }
 
-    // Ads Preview (renumerado a 9)
-    if (currentStep === 9) {
+    if (currentStep === 7) {
       return trigger(["adsPreviewComment"]);
     }
 
-    // Ajuste #7 — el step 10 solo muestra recomendaciones del SEM team (sin formulario)
-    if (currentStep === 10) {
+    if (currentStep === 8) {
       return true;
     }
 
-    if (currentStep === 11) {
+    if (currentStep === 9) {
       return trigger(["finalComment"]);
     }
 
@@ -213,7 +172,10 @@ export function ClientWizard({
     try {
       const snapshot = getValues();
       if (currentStep === TOTAL_STEPS) {
-        if (!await trigger()) {
+        if (!await trigger([
+          "introAcknowledged", "services", "budget", "geoTarget",
+          "businessBioSelection", "missingInfoResponses", "adsPreviewComment", "finalComment"
+        ])) {
           setStepError("Please review your answers and correct the highlighted fields before submitting.");
           return;
         }
@@ -264,11 +226,25 @@ export function ClientWizard({
             </div>
 
             <div className="flex flex-col gap-3 pt-4">
-              <Button type="button" className="w-full bg-slate-900 h-12 text-base font-bold" onClick={() => window.close()}>
-                Close Window
+              <Button
+                type="button"
+                className="h-12 w-full bg-slate-900 text-base font-bold hover:bg-slate-800"
+                onClick={() => { window.close(); setCloseRequested(true); }}
+              >
+                That&apos;s all
               </Button>
-              <Button type="button" variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 font-medium" onClick={() => setSubmitted(false)}>
-                Review my answers
+              {closeRequested && (
+                <p role="status" className="text-xs text-slate-500">
+                  Your planning is saved. If this tab stays open, you can close it manually.
+                </p>
+              )}
+              <Button
+                type="button"
+                variant="link"
+                className="self-center text-sm font-medium text-slate-500 hover:text-slate-900"
+                onClick={() => { setCurrentStep(1); setSubmitted(false); setCloseRequested(false); }}
+              >
+                Review planning again
               </Button>
             </div>
           </CardContent>
@@ -328,28 +304,23 @@ export function ClientWizard({
       ) : null}
 
       {currentStep === 2 ? (
-        <CompactStepCard title="Services Review" description="Review selected and recommended services.">
-          <div className="flex items-center gap-2 mb-2">
-            <Briefcase className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">Confirmed Services</span>
-          </div>
-          <ServiceCardList
-            selected={session.proposal.services.selected}
-            recommended={session.proposal.services.recommended}
-          />
-          <div className="pt-4">
-            <DecisionCardGroup
-              decision={values.services.decision}
-              onDecisionChange={(value) =>
-                setValue("services.decision", value, { shouldDirty: true, shouldValidate: true })
-              }
-              comment={values.services.comment}
-              onCommentChange={(value) =>
-                setValue("services.comment", value, { shouldDirty: true, shouldValidate: true })
-              }
+        <Card className="shadow-sm">
+          <CardContent className="p-5 sm:p-6">
+            <ServiceCardList
+              selected={session.proposal.services.selected}
+              recommended={session.proposal.services.recommended}
+              chosen={values.services.selectedServices ?? session.proposal.services.selected}
+              onToggle={(service) => {
+                const selected = values.services.selectedServices ?? session.proposal.services.selected;
+                const next = selected.includes(service) ? selected.filter(item => item !== service) : [...selected, service];
+                setValue("services.selectedServices", next, { shouldDirty: true });
+                const proposed = session.proposal.services.selected;
+                setValue("services.decision", next.length === proposed.length && proposed.every(item => next.includes(item)) ? "accept" : "request_changes", { shouldDirty: true });
+                setStepError(null);
+              }}
             />
-          </div>
-        </CompactStepCard>
+          </CardContent>
+        </Card>
       ) : null}
 
       {currentStep === 3 ? (
@@ -437,86 +408,6 @@ export function ClientWizard({
       ) : null}
 
       {currentStep === 5 ? (
-        <CompactStepCard title="Photos & Assets" description="Upload your current logo in high quality for branding consistency.">
-          <div className="flex items-center gap-2 mb-2">
-            <Camera className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">Brand Identity</span>
-          </div>
-          <div className="space-y-4">
-            {/* Ajuste #3 — Description for company logo */}
-            <div className="rounded-xl border bg-white p-3 shadow-sm">
-              <p className="text-sm font-bold text-slate-800">Company logo</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                {getRequirementText(logoRequirement?.instructions)}
-              </p>
-              <UploadDropzoneOrInput
-                label="Upload logo"
-                helper="JPEG, PNG, BMP or ICO. Transparent background preferred."
-                onFiles={(files) =>
-                  setValue("assets.logoFileName", files[0] || "", {
-                    shouldDirty: true,
-                    shouldValidate: true
-                  })
-                }
-              />
-            </div>
-            {/* Ajustes #4 + #5 — Description y requirements para business & work photos */}
-            <div className="rounded-xl border bg-white p-3 shadow-sm">
-              <p className="text-sm font-bold text-slate-800">Business &amp; work photos</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                {getRequirementText(photoRequirement?.instructions)}
-              </p>
-              {photoRequirement ? (
-                <p className="mt-2 text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
-                  {formatPhotoRequirements(photoRequirement)}
-                </p>
-              ) : null}
-              <UploadDropzoneOrInput
-                label="Upload business photos"
-                helper="Interior, exterior, projects, or team"
-                multiple
-                onFiles={(files) =>
-                  setValue("assets.photos", files, {
-                    shouldDirty: true,
-                    shouldValidate: true
-                  })
-                }
-              />
-            </div>
-          </div>
-        </CompactStepCard>
-      ) : null}
-
-      {currentStep === 6 ? (
-        <CompactStepCard title="Business Hours" description="Confirm daily schedule and weekend/holiday notes.">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">Operation Schedule</span>
-          </div>
-          <BusinessHoursEditor
-            hours={values.businessHours}
-            onChange={(hours) =>
-              setValue("businessHours", hours, { shouldDirty: true, shouldValidate: true })
-            }
-          />
-          <div className="grid gap-2 mt-6">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Weekend and holiday note</Label>
-            <Textarea
-              placeholder="Ex: We are usually closed on national holidays..."
-              value={values.hoursNotes || ""}
-              onChange={(event) =>
-                setValue("hoursNotes", event.target.value, {
-                  shouldDirty: true,
-                  shouldValidate: true
-                })
-              }
-              className="bg-white"
-            />
-          </div>
-        </CompactStepCard>
-      ) : null}
-
-      {currentStep === 7 ? (
         <CompactStepCard title="Business Bio" description="Choose at least one category that best fits your business.">
           <div className="flex items-center gap-2 mb-2">
             <Type className="h-4 w-4 text-primary" />
@@ -535,10 +426,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {/* Ajuste #9 — NUEVA VENTANA: Team Information (fieldworkers).
-          Antes la pregunta vivía dentro de un missing-info-form en el paso 9 junto con
-          otros campos duplicados. Ahora es una ventana dedicada y la única vez que se pregunta. */}
-      {currentStep === 8 ? (
+      {currentStep === 6 ? (
         <CompactStepCard
           title="Team Information"
           description="Tell us about your active field service team."
@@ -588,7 +476,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 9 ? (
+      {currentStep === 7 ? (
         <CompactStepCard title="Ads Preview" description="Preview of how your business will appear in Google LSA.">
           <div className="flex items-center gap-2 mb-2">
             <Megaphone className="h-4 w-4 text-primary" />
@@ -599,7 +487,7 @@ export function ClientWizard({
           <AdsPreviewCard
             note={session.proposal.adsPreviewNote}
             businessName={client.name}
-            service={session.proposal.services.selected[0]}
+            service={(values.services.selectedServices ?? session.proposal.services.selected)[0]}
             location={
               values.geoTarget.preferredLocations[0] ||
               session.proposal.geoTarget.visibleLocations[0]
@@ -628,7 +516,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 10 ? (
+      {currentStep === 8 ? (
         <CompactStepCard title="SEM Team Recommendations" description="Review the recommendations from our SEM team.">
           <div className="flex items-center gap-2 mb-2">
             <ClipboardCheck className="h-4 w-4 text-primary" />
@@ -652,7 +540,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 11 ? (
+      {currentStep === 9 ? (
         <CompactStepCard
           title="Additional Comments"
           description="Share any final context before the SEM team processes your plan."
@@ -683,7 +571,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 12 ? (
+      {currentStep === 10 ? (
         <CompactStepCard title="Review & Submit" description="Verify all sections before finalizing.">
           <div className="flex items-center gap-2 mb-2">
             <Flag className="h-4 w-4 text-primary" />
@@ -698,19 +586,13 @@ export function ClientWizard({
               >
                 <div className="text-xs space-y-1">
                   {section.id === "services" && (
-                    <p className="font-medium text-slate-700">Decision: <span className="text-primary font-bold">{values.services.decision}</span></p>
+                    <p className="font-medium text-slate-700">Selected: <span className="text-primary font-bold">{(values.services.selectedServices ?? session.proposal.services.selected).join(", ") || "None"}</span></p>
                   )}
                   {section.id === "budget" && (
                     <p className="font-medium text-slate-700">Decision: <span className="text-primary font-bold">{values.budget.decision}</span></p>
                   )}
                   {section.id === "geo" && (
                     <p className="font-medium text-slate-700">Decision: <span className="text-primary font-bold">{values.geoTarget.decision}</span></p>
-                  )}
-                  {section.id === "assets" && (
-                    <p className="font-medium text-slate-700">Logo: <span className="text-primary font-bold">{values.assets.logoFileName || "Default"}</span></p>
-                  )}
-                  {section.id === "hours" && (
-                    <p className="font-medium text-slate-700">Schedule: <span className="text-primary font-bold">Updated</span></p>
                   )}
                   {section.id === "bio" && (
                     <p className="font-medium text-slate-700">Selection: <span className="text-primary font-bold">{values.businessBioSelection.length} categories</span></p>

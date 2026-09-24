@@ -1,7 +1,4 @@
-import { Check } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { SelectionTile } from "@/components/wizard/selection-tile";
 
 interface GeoTargetSelectorProps {
   locations: string[];
@@ -9,31 +6,12 @@ interface GeoTargetSelectorProps {
   onToggle: (location: string) => void;
 }
 
-export function GeoTargetSelector({
-  locations,
-  selected,
-  onToggle
-}: GeoTargetSelectorProps) {
+export function GeoTargetSelector({ locations, selected, onToggle }: GeoTargetSelectorProps) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {locations.map((location) => {
-        const active = selected.includes(location);
-        return (
-          <Button
-            key={location}
-            type="button"
-            variant="outline"
-            onClick={() => onToggle(location)}
-            className={cn(
-              "h-auto rounded-full px-3 py-2 text-xs",
-              active && "border-primary bg-primary/10 text-primary"
-            )}
-          >
-            {active ? <Check className="mr-1 h-3.5 w-3.5" /> : null}
-            {location}
-          </Button>
-        );
-      })}
+    <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Target locations">
+      {[...new Set(locations)].map(location => (
+        <SelectionTile key={location} label={location} selected={selected.includes(location)} onToggle={() => onToggle(location)} />
+      ))}
     </div>
   );
 }

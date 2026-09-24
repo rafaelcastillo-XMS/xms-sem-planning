@@ -118,7 +118,7 @@ export type MissingInfoResponseValue = string | number | boolean | string[];
 
 export interface ClientResponse {
   introAcknowledged: boolean;
-  services: ClientStepDecision;
+  services: ClientStepDecision & { selectedServices?: string[] };
   budget: ClientStepDecision & {
     requestedBudgetNote?: string;
   };

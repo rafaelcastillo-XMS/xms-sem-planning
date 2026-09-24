@@ -21,45 +21,42 @@ export function MobileStepHeader({
   totalSteps
 }: MobileStepHeaderProps) {
   return (
-    <header className="relative isolate overflow-hidden border-b border-slate-700 bg-slate-950 text-white shadow-xl shadow-slate-950/15 sm:sticky sm:top-0 sm:z-20">
+    <header className="relative isolate overflow-hidden border-b border-slate-700 bg-slate-950 text-white shadow-xl shadow-slate-950/15">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 -z-10 h-64 w-64 rounded-full bg-blue-500/15 blur-3xl" />
-      <div className="mx-auto w-full max-w-xl px-4 pb-5 pt-3 sm:pt-4">
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="relative h-8 w-24 shrink-0 rounded-lg bg-white">
+      <div className="mx-auto w-full max-w-xl px-4 pb-6 pt-5 sm:pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div className="min-w-[200px] flex-1">
+            <div className="relative h-24 w-full sm:h-28">
               <Image
-                src={publicAsset("/logo.png")}
+                src={publicAsset("/xms-logo-dark.webp")}
                 alt="XMS Ai"
                 fill
-                sizes="96px"
-                className="object-contain px-2 py-1"
+                sizes="(min-width: 640px) 372px, (max-width: 355px) calc(100vw - 32px), calc(100vw - 156px)"
+                className="object-contain"
                 priority
               />
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-200">
-              SEM Plan
-            </span>
           </div>
-          <div className="relative h-8 w-20 shrink-0 rounded-lg bg-white">
+          <div className="relative h-14 w-28 shrink-0 sm:h-16 sm:w-40">
             <Image
-              src={publicAsset("/google-partner.png")}
+              src={publicAsset("/google-partner-updated.png")}
               alt="Google Partner"
               fill
-              sizes="80px"
-              className="object-contain px-2 py-1"
+              sizes="(min-width: 640px) 160px, 112px"
+              className="object-contain"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-3 py-4">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg">
+        <div className="flex items-center gap-4 py-6">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-white/20 bg-white/10 shadow-lg">
             {logoUrl ? (
               <Image
                 src={logoUrl}
                 alt={companyName}
                 fill
-                sizes="48px"
+                sizes="56px"
                 unoptimized
                 className="bg-white object-contain p-1"
               />
@@ -70,9 +67,9 @@ export function MobileStepHeader({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-200">Your campaign planning</p>
-            <p className="break-words text-sm font-semibold leading-snug text-white sm:text-base">
-              Hi {companyName}! 👋
+            <p className="mb-2 text-sm font-semibold text-blue-200 sm:text-base">Your campaign planning</p>
+            <p className="break-words text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
+              Hi, {companyName}!
             </p>
           </div>
         </div>
