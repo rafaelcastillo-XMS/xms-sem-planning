@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { readLogo } from "@/lib/logo-upload";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { Eye, Save, X, Check, Info, Briefcase, DollarSign, MapPin, ClipboardCheck, Zap, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ import {
 } from "@/lib/validators";
 
 interface AdminPlanningFormProps {
-  defaultValues: PlanningBuilderValues;
+  defaultValues: DefaultValues<PlanningBuilderValues>;
   onSubmit: (values: PlanningBuilderValues) => void | Promise<void>;
   submitLabel?: string;
   publicPath?: string;
@@ -30,9 +30,9 @@ interface AdminPlanningFormProps {
   isSuccess?: boolean;
 }
 
-function FieldError({ message }: { message?: string }) {
+function FieldError({ message, id }: { message?: string; id?: string }) {
   if (!message) return null;
-  return <p className="text-xs text-destructive">{message}</p>;
+  return <p id={id} className="text-xs text-destructive">{message}</p>;
 }
 
 export function AdminPlanningForm({
@@ -61,24 +61,24 @@ export function AdminPlanningForm({
       try { await onSubmit(values); } catch { setSaveError("Could not save to Supabase. Please try again. Your changes are still here."); }
     })} className="grid gap-6 pb-20 md:grid-cols-[1fr_340px]">
       <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-700">
-        <Card className="premium-card">
-          <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              <Info className="h-4 w-4 text-primary" />
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <Info className="h-4 w-4 shrink-0 text-white" />
               1. Basic Client Info
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-3">
-              <Label htmlFor="clientName" className="text-xs font-semibold uppercase text-slate-500">Company name</Label>
-              <Input id="clientName" {...register("clientName")} className="bg-white/50" />
-              <FieldError message={formState.errors.clientName?.message} />
+              <Label htmlFor="clientName" className="text-xs font-semibold uppercase text-slate-500">Company name (required)</Label>
+              <Input id="clientName" aria-describedby="clientName-error" aria-invalid={!!formState.errors.clientName} aria-required="true" {...register("clientName")} placeholder="e.g., Company name" className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+              <FieldError id="clientName-error" message={formState.errors.clientName?.message} />
             </div>
             <div className="grid gap-3">
               <Label htmlFor="slug" className="flex items-center justify-between text-xs font-semibold uppercase text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <LinkIcon className="h-3 w-3" />
-                  Public slug
+                  Public slug (required)
                 </span>
                 {isSlugLocked && (
                   <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-muted-foreground">
@@ -88,15 +88,16 @@ export function AdminPlanningForm({
               </Label>
               <Input
                 id="slug"
-                {...register("slug")}
+                placeholder="e.g., company-name"
+                aria-describedby="slug-error" aria-invalid={!!formState.errors.slug} aria-required="true" {...register("slug")}
                 disabled={isSlugLocked}
-                className={isSlugLocked ? "bg-slate-50 cursor-not-allowed opacity-70" : "bg-white/50"}
+                className={isSlugLocked ? "bg-slate-50 placeholder:text-slate-400 cursor-not-allowed opacity-70" : "bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive"}
               />
-              <FieldError message={formState.errors.slug?.message} />
+              <FieldError id="slug-error" message={formState.errors.slug?.message} />
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="logoFile" className="text-xs font-semibold uppercase text-slate-500">Company logo</Label>
+              <Label htmlFor="logoFile" className="text-xs font-semibold uppercase text-slate-500">Company logo (optional)</Label>
               <Input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp" disabled={readingLogo || formState.isSubmitting} onChange={async (event) => {
                 const file = event.target.files?.[0];
                 event.target.value = "";
@@ -120,130 +121,163 @@ export function AdminPlanningForm({
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
-          <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              <Briefcase className="h-4 w-4 text-primary" />
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <Briefcase className="h-4 w-4 shrink-0 text-white" />
               2. Services
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Selected services</Label>
+              <Label htmlFor="selectedServicesText" className="text-xs font-semibold uppercase text-slate-500">Selected services (required)</Label>
+              <p id="selectedServicesText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+                One service per line. Press Enter to add another.
+              </p>
               <Textarea
-                {...register("selectedServicesText")}
-                placeholder="One service per line"
-                className="bg-white/50 min-h-[120px]"
+                id="selectedServicesText"
+                aria-describedby="selectedServicesText-hint selectedServicesText-error"
+                aria-invalid={!!formState.errors.selectedServicesText} aria-required="true" {...register("selectedServicesText")}
+                placeholder={"Service / keyword 1\nService / keyword 2"}
+                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive min-h-[120px]"
               />
-              <FieldError message={formState.errors.selectedServicesText?.message} />
+              <FieldError id="selectedServicesText-error" message={formState.errors.selectedServicesText?.message} />
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Recommended services</Label>
+              <Label htmlFor="recommendedServicesText" className="text-xs font-semibold uppercase text-slate-500">Recommended services (optional)</Label>
+              <p id="recommendedServicesText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+                One service per line. Press Enter to add another.
+              </p>
               <Textarea
-                {...register("recommendedServicesText")}
-                placeholder="One service per line"
-                className="bg-white/50 min-h-[100px]"
+                id="recommendedServicesText"
+                aria-describedby="recommendedServicesText-hint recommendedServicesText-error"
+                aria-invalid={!!formState.errors.recommendedServicesText} {...register("recommendedServicesText")}
+                placeholder={"Recommended service / keyword 1\nRecommended service / keyword 2"}
+                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive min-h-[100px]"
               />
+              <FieldError id="recommendedServicesText-error" message={formState.errors.recommendedServicesText?.message} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
-          <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              <DollarSign className="h-4 w-4 text-primary" />
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <DollarSign className="h-4 w-4 shrink-0 text-white" />
               3. Budget & Bidding
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label className="text-xs font-semibold uppercase text-slate-500">Client weekly budget</Label>
+                <Label htmlFor="weeklyBudget" className="text-xs font-semibold uppercase text-slate-500">SEM recommended weekly minimum (required)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <Input type="number" {...register("weeklyBudget")} className="pl-7 bg-white/50" />
+                  <Input type="number" id="weeklyBudget" aria-describedby="weeklyBudget-error" aria-invalid={!!formState.errors.weeklyBudget} aria-required="true" {...register("weeklyBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
                 </div>
+                <FieldError id="weeklyBudget-error" message={formState.errors.weeklyBudget?.message} />
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs font-semibold uppercase text-slate-500">Client monthly budget</Label>
+                <Label htmlFor="monthlyBudget" className="text-xs font-semibold uppercase text-slate-500">SEM recommended monthly minimum (required)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <Input type="number" {...register("monthlyBudget")} className="pl-7 bg-white/50" />
+                  <Input type="number" id="monthlyBudget" aria-describedby="monthlyBudget-error" aria-invalid={!!formState.errors.monthlyBudget} aria-required="true" {...register("monthlyBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
                 </div>
+                <FieldError id="monthlyBudget-error" message={formState.errors.monthlyBudget?.message} />
               </div>
               <div className="grid gap-2">
-                <Label className="text-xs font-semibold uppercase text-slate-500">Min. req. budget from Google</Label>
+                <Label htmlFor="minimumRequiredBudget" className="text-xs font-semibold uppercase text-slate-500">Google required monthly minimum (required)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <Input type="number" {...register("minimumRequiredBudget")} className="pl-7 bg-white/50" />
+                  <Input id="minimumRequiredBudget" aria-describedby="google-minimum-hint minimumRequiredBudget-error" type="number" aria-invalid={!!formState.errors.minimumRequiredBudget} aria-required="true" {...register("minimumRequiredBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
                 </div>
+                <FieldError id="minimumRequiredBudget-error" message={formState.errors.minimumRequiredBudget?.message} />
+                <p id="google-minimum-hint" className="text-xs text-slate-600">Enter Google’s current monthly minimum for this client’s industry. This amount is entered manually by SEM.</p>
               </div>
-            </div>
-            <div className="grid gap-2 mt-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Budget Recommendation note by XMS</Label>
-              <Textarea {...register("budgetNote")} className="bg-white/50" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
-          <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              <MapPin className="h-4 w-4 text-primary" />
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <MapPin className="h-4 w-4 shrink-0 text-white" />
               4. Geo Target
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Visible target locations (selected by client)</Label>
+              <Label htmlFor="locationsText" className="text-xs font-semibold uppercase text-slate-500">Visible target locations (selected by client) (required)</Label>
+              <p id="locationsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+                One location per line. Press Enter to add another.
+              </p>
               <Textarea
-                {...register("locationsText")}
-                placeholder="One location per line"
-                className="bg-white/50 min-h-[100px]"
+                id="locationsText"
+                aria-describedby="locationsText-hint locationsText-error"
+                aria-invalid={!!formState.errors.locationsText} aria-required="true" {...register("locationsText")}
+                placeholder={"City / location 1\nCity / location 2\nZIP code"}
+                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive min-h-[100px]"
               />
+              <FieldError id="locationsText-error" message={formState.errors.locationsText?.message} />
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Geo target recommendation by XMS</Label>
-              <Textarea {...register("geoRecommendation")} className="bg-white/50" />
+              <Label htmlFor="geoRecommendation" className="text-xs font-semibold uppercase text-slate-500">Geo target recommendation by XMS (optional)</Label>
+              <Textarea id="geoRecommendation" aria-describedby="geoRecommendation-error" aria-invalid={!!formState.errors.geoRecommendation} {...register("geoRecommendation")} placeholder="e.g., Prioritize cities or ZIP codes within the client’s service area." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+              <FieldError id="geoRecommendation-error" message={formState.errors.geoRecommendation?.message} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="premium-card">
-          <CardHeader className="pb-3 border-b border-slate-100/50 mb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              <ClipboardCheck className="h-4 w-4 text-primary" />
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <ClipboardCheck className="h-4 w-4 shrink-0 text-white" />
               5. Creative Details & SEM Notes
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Company logo description</Label>
-              <Textarea {...register("logoInstructionsText")} className="bg-white/50" />
+              <Label htmlFor="photoInstructionsText" className="text-xs font-semibold uppercase text-slate-500">Business &amp; work photos description (optional)</Label>
+              <Textarea id="photoInstructionsText" aria-describedby="photoInstructionsText-error" aria-invalid={!!formState.errors.photoInstructionsText} {...register("photoInstructionsText")} placeholder="e.g., Team photos, completed projects, and images of services in progress." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+              <FieldError id="photoInstructionsText-error" message={formState.errors.photoInstructionsText?.message} />
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Business &amp; work photos description</Label>
-              <Textarea {...register("photoInstructionsText")} className="bg-white/50" />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Business bio options</Label>
+              <Label htmlFor="businessBioOptionsText" className="text-xs font-semibold uppercase text-slate-500">Business bio options (required)</Label>
+              <p id="businessBioOptionsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+                One verified business attribute per line. Press Enter to add another.
+              </p>
               <Textarea
-                {...register("businessBioOptionsText")}
-                placeholder="One option per line"
-                className="bg-white/50"
+                id="businessBioOptionsText"
+                aria-describedby="businessBioOptionsText-hint businessBioOptionsText-error"
+                aria-invalid={!!formState.errors.businessBioOptionsText} aria-required="true" {...register("businessBioOptionsText")}
+                placeholder={"e.g., Locally owned\ne.g., Free estimates"}
+                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive"
               />
+              <FieldError id="businessBioOptionsText-error" message={formState.errors.businessBioOptionsText?.message} />
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Ads preview note</Label>
-              <Textarea {...register("adsPreviewNote")} className="bg-white/50" />
+              <Label htmlFor="adsPreviewNote" className="text-xs font-semibold uppercase text-slate-500">Ads preview note (optional)</Label>
+              <Textarea id="adsPreviewNote" aria-describedby="adsPreviewNote-error" aria-invalid={!!formState.errors.adsPreviewNote} {...register("adsPreviewNote")} placeholder="Describe what the client should review in the ads and any details that may vary." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+              <FieldError id="adsPreviewNote-error" message={formState.errors.adsPreviewNote?.message} />
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold uppercase text-slate-500">Recommendations</Label>
+              <Label htmlFor="recommendationsText" className="text-xs font-semibold uppercase text-slate-500">Recommendations (optional)</Label>
+              <p id="recommendationsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+                One recommendation per line. Press Enter to add another.
+              </p>
               <Textarea
-                {...register("recommendationsText")}
-                placeholder="One recommendation per line"
-                className="bg-white/50"
+                id="recommendationsText"
+                aria-describedby="recommendationsText-hint recommendationsText-error"
+                aria-invalid={!!formState.errors.recommendationsText} {...register("recommendationsText")}
+                placeholder={"e.g., Request reviews after completed jobs\ne.g., Keep business hours up to date"}
+                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive"
               />
+              <FieldError id="recommendationsText-error" message={formState.errors.recommendationsText?.message} />
             </div>
           </CardContent>
         </Card>
@@ -289,6 +323,9 @@ export function AdminPlanningForm({
               </Button>
             ) : null}
 
+            {Object.keys(formState.errors).length > 0 && (
+          <p role="alert" className="mt-3 text-sm text-destructive">Please correct the highlighted fields before saving. Your entries are still here.</p>
+        )}
             {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
             <div className="pt-2">
               <p className="text-[10px] text-center text-muted-foreground leading-tight px-2">
@@ -298,6 +335,23 @@ export function AdminPlanningForm({
           </CardContent>
         </Card>
       </aside>
+      <div className="border-b border-slate-200 pb-5 md:col-span-2">
+        <Button
+          type="submit"
+          className={cn(
+            "w-full font-bold sm:w-auto sm:min-w-60",
+            isSuccess ? "bg-emerald-600 hover:bg-emerald-600" : "bg-primary hover:bg-primary/90"
+          )}
+          disabled={formState.isSubmitting || readingLogo}
+        >
+          {isSuccess ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+          {formState.isSubmitting ? "Saving…" : isSuccess ? "Changes saved" : submitLabel}
+        </Button>
+        {Object.keys(formState.errors).length > 0 && (
+          <p role="alert" className="mt-3 text-sm text-destructive">Please correct the highlighted fields before saving. Your entries are still here.</p>
+        )}
+        {saveError && <p className="mt-3 text-sm text-destructive">{saveError}</p>}
+      </div>
     </form>
   );
 }

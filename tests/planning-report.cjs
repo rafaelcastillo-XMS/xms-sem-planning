@@ -16,12 +16,12 @@ const { seededSessions } = load('mock-data/planning.ts');
 test('PDF contains the full report and paginates long client responses', () => {
   const session = structuredClone(seededSessions[0]);
   session.status = 'submitted';
-  session.response.finalComment = 'Comentario de José: revisión y aprobación. '.repeat(150);
+  session.response.geoTarget.comment = 'Comentario de José: revisión y aprobación. '.repeat(150);
   session.response.businessHours = [{ day: 'monday', isClosed: false, openTime: '09:00', closeTime: '18:00' }];
   session.response.missingInfoResponses.totalFieldworkers = 17;
   const client = { name: 'A & B / José', slug: 'test', id: 'test' };
   const sections = JSON.stringify(planningReportSections(client, session));
-  for (const text of ['Services', 'Budget', 'Geo targeting', 'Business hours', '09:00 - 18:00', 'Total fieldworkers', '17', 'Final client comments']) assert.ok(sections.includes(text), text);
+  for (const text of ['Services', 'Budget', 'Geo targeting', 'What the client approved', 'Total fieldworkers', '17']) assert.ok(sections.includes(text), text);
   const doc = buildPlanningPdf(client, session);
   assert.ok(doc.getNumberOfPages() >= 3);
   const pdf = doc.output('arraybuffer');

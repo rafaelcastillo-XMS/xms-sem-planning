@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CheckCircle2,
   TriangleAlert,
-  User,
   Users,
   DollarSign,
   MapPin,
@@ -13,7 +12,6 @@ import {
   Megaphone,
   Lightbulb,
   Flag,
-  Sparkles,
   ClipboardCheck,
   MessageSquare
 } from "lucide-react";
@@ -21,6 +19,7 @@ import { useForm } from "react-hook-form";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 
+import { PlanningIntroduction } from "@/components/wizard/planning-introduction";
 import { AdsPreviewCard } from "@/components/wizard/ads-preview-card";
 import { BioCategorySelector } from "@/components/wizard/bio-category-selector";
 import { BudgetSummaryCard } from "@/components/wizard/budget-summary-card";
@@ -40,6 +39,7 @@ import {
   clientResponseSchema,
   ClientResponseFormValues
 } from "@/lib/validators";
+import { formatCurrency } from "@/lib/utils";
 import { Client, PlanningSession, ProposalSection } from "@/types/planning";
 
 interface ClientWizardProps {
@@ -268,7 +268,7 @@ export function ClientWizard({
       onBack={currentStep > 1 && !isSaving ? handleBack : undefined}
       onNext={handleNext}
       disableNext={isSaving}
-      nextLabel={isSaving ? "Saving…" : currentStep === TOTAL_STEPS ? "Submit and Process" : "Continue"}
+      nextLabel={isSaving ? "Saving…" : currentStep === TOTAL_STEPS ? "Submit and Process" : currentStep === 1 ? "Let’s get started" : "Continue"}
     >
       {stepError ? (
         <Card className="border-amber-300 bg-amber-50">
@@ -280,27 +280,7 @@ export function ClientWizard({
       ) : null}
 
       {currentStep === 1 ? (
-        <CompactStepCard
-          title="Welcome to your LSA planning review"
-          description="This workflow replaces email back-and-forth so we can finalize your setup faster."
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <User className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-slate-700 underline decoration-primary/30 underline-offset-4 tracking-tight">Introduction</span>
-          </div>
-          <p className="text-sm text-muted-foreground leading-relaxed italic">{session.proposal.kpiContext}</p>
-          <div className="grid gap-3 pt-2">
-            {session.proposal.kpiBlocks.map((kpi) => (
-              <div key={kpi.id} className="rounded-xl border bg-white p-4 shadow-sm border-slate-100 hover:border-primary/20 transition-all group">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-primary group-hover:animate-pulse" />
-                  <p className="text-sm font-bold text-slate-800">{kpi.title}</p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{kpi.description}</p>
-              </div>
-            ))}
-          </div>
-        </CompactStepCard>
+        <PlanningIntroduction proposal={session.proposal} />
       ) : null}
 
       {currentStep === 2 ? (
@@ -333,6 +313,7 @@ export function ClientWizard({
           <div className="pt-4 space-y-6">
             <DecisionCardGroup
               decision={values.budget.decision}
+              commentPlaceholder="Enter your preferred budget, its period, and any comments."
               onDecisionChange={(value) =>
                 setValue("budget.decision", value, { shouldDirty: true, shouldValidate: true })
               }
@@ -341,20 +322,6 @@ export function ClientWizard({
                 setValue("budget.comment", value, { shouldDirty: true, shouldValidate: true })
               }
             />
-            <div className="grid gap-2 p-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Requested budget note (optional)</Label>
-              <Textarea
-                placeholder="Ex: I want to start with a lower budget for the first 2 weeks..."
-                value={values.budget.requestedBudgetNote || ""}
-                onChange={(event) =>
-                  setValue("budget.requestedBudgetNote", event.target.value, {
-                    shouldDirty: true,
-                    shouldValidate: true
-                  })
-                }
-                className="bg-white"
-              />
-            </div>
           </div>
         </CompactStepCard>
       ) : null}
@@ -496,7 +463,7 @@ export function ClientWizard({
             bioDescription={
               session.proposal.businessBioOptions.find(
                 (option) => option.id === values.businessBioSelection[0]
-              )?.label
+              )?.label ?? values.businessBioSelection[0]
             }
           />
           <div className="grid gap-2 mt-6">
@@ -572,10 +539,13 @@ export function ClientWizard({
       ) : null}
 
       {currentStep === 10 ? (
-        <CompactStepCard title="Review & Submit" description="Verify all sections before finalizing.">
-          <div className="flex items-center gap-2 mb-2">
-            <Flag className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">Final Step</span>
+        <CompactStepCard title="Your plan at a glance" description="Review the details below before sending your answers to the SEM team.">
+          <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-950">
+            <Flag aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <p className="text-base font-bold">One final check before you submit</p>
+              <p className="mt-1 text-sm leading-relaxed">Use the pencil icon to change any section. Your requests and comments are included below so you can confirm exactly what you’re sending.</p>
+            </div>
           </div>
           <div className="space-y-4">
             {REVIEW_SECTIONS.map((section) => (
@@ -584,43 +554,72 @@ export function ClientWizard({
                 title={section.title}
                 onEdit={() => setCurrentStep(SECTION_TO_STEP[section.id])}
               >
-                <div className="text-xs space-y-1">
+                <div className="space-y-3 text-sm leading-relaxed">
                   {section.id === "services" && (
-                    <p className="font-medium text-slate-700">Selected: <span className="text-primary font-bold">{(values.services.selectedServices ?? session.proposal.services.selected).join(", ") || "None"}</span></p>
+                    <>
+                      <ul className="list-disc space-y-1 pl-5 font-medium text-slate-900">
+                        {(values.services.selectedServices ?? session.proposal.services.selected).map(service => <li key={service}>{service}</li>)}
+                      </ul>
+                      {(values.services.selectedServices ?? session.proposal.services.selected).length === 0 && <p>No services selected.</p>}
+                      {values.services.comment && <p className="whitespace-pre-wrap">{values.services.comment}</p>}
+                    </>
                   )}
                   {section.id === "budget" && (
-                    <p className="font-medium text-slate-700">Decision: <span className="text-primary font-bold">{values.budget.decision}</span></p>
+                    <>
+                      <span className={values.budget.decision === "accept" ? "inline-flex rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-900" : "inline-flex rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-900"}>
+                        {values.budget.decision === "accept" ? "Accepted as proposed" : "Changes requested"}
+                      </span>
+                      <dl className="space-y-2">
+                        <div className="flex flex-wrap justify-between gap-2"><dt>SEM weekly recommendation</dt><dd className="font-bold text-slate-950">{formatCurrency(session.proposal.budget.weeklyBudget)}</dd></div>
+                        <div className="flex flex-wrap justify-between gap-2"><dt>SEM monthly recommendation</dt><dd className="font-bold text-slate-950">{formatCurrency(session.proposal.budget.monthlyBudget)}</dd></div>
+                        <div className="flex flex-wrap justify-between gap-2 border-t pt-2"><dt>Google monthly minimum</dt><dd className="font-bold text-slate-950">{formatCurrency(session.proposal.budget.minimumRequiredBudget)}</dd></div>
+                      </dl>
+                      {values.budget.comment && <div className="rounded-lg bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.budget.comment}</p></div>}
+                      {values.budget.requestedBudgetNote && <p className="whitespace-pre-wrap">Requested budget: {values.budget.requestedBudgetNote}</p>}
+                    </>
                   )}
                   {section.id === "geo" && (
-                    <p className="font-medium text-slate-700">Decision: <span className="text-primary font-bold">{values.geoTarget.decision}</span></p>
+                    <>
+                      <span className={values.geoTarget.decision === "accept" ? "inline-flex rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-900" : "inline-flex rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-900"}>
+                        {values.geoTarget.decision === "accept" ? "Accepted as proposed" : "Changes requested"}
+                      </span>
+                      <p className="font-semibold text-slate-900">Selected locations</p>
+                      <div className="flex flex-wrap gap-2">{values.geoTarget.preferredLocations.map(location => <span key={location} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1">{location}</span>)}</div>
+                      {values.geoTarget.preferredLocations.length === 0 && <p>No locations selected.</p>}
+                      {values.geoTarget.comment && <div className="rounded-lg bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.geoTarget.comment}</p></div>}
+                      {values.geoTarget.note && <p className="whitespace-pre-wrap">{values.geoTarget.note}</p>}
+                    </>
                   )}
                   {section.id === "bio" && (
-                    <p className="font-medium text-slate-700">Selection: <span className="text-primary font-bold">{values.businessBioSelection.length} categories</span></p>
+                    <>
+                      <p className="font-semibold text-slate-900">{values.businessBioSelection.length} of 6 categories selected</p>
+                      <div className="flex flex-wrap gap-2">{values.businessBioSelection.map(value => <span key={value} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-blue-900">{session.proposal.businessBioOptions.find(option => option.id === value)?.label ?? value}</span>)}</div>
+                    </>
                   )}
                   {section.id === "team" && (
-                    <p className="font-medium text-slate-700">Fieldworkers: <span className="text-primary font-bold">{String(values.missingInfoResponses?.totalFieldworkers ?? "—")}</span></p>
+                    <p><span className="mr-2 text-2xl font-bold text-slate-950">{String(values.missingInfoResponses?.totalFieldworkers ?? "—")}</span> active fieldworkers</p>
                   )}
                   {section.id === "ads" && (
-                    <p className="font-medium text-slate-700">Feedback: <span className="text-primary font-bold">{values.adsPreviewComment ? "Provided" : "None"}</span></p>
+                    <p className="whitespace-pre-wrap">{values.adsPreviewComment || "No ad feedback added."}</p>
                   )}
                   {section.id === "recommendations" && (
-                    <p className="font-medium text-slate-700">Status: <span className="text-primary font-bold">Checked</span></p>
+                    session.proposal.recommendations.length > 0 ? <ul className="list-disc space-y-2 pl-5">{session.proposal.recommendations.map((recommendation, index) => <li key={index}>{recommendation}</li>)}</ul> : <p>No additional recommendations from the SEM team.</p>
                   )}
                   {section.id === "comments" && (
-                    <p className="font-medium text-slate-700">Additional comments: <span className="text-primary font-bold">{values.finalComment ? "Provided" : "None"}</span></p>
+                    <p className="whitespace-pre-wrap">{values.finalComment || "No additional comments."}</p>
                   )}
                 </div>
               </ReviewSectionCard>
             ))}
           </div>
 
-          <div className="mt-8 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-start gap-3">
-            <div className="bg-primary/10 p-2 rounded-full mt-0.5">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
+          <div className="mt-8 flex items-start gap-4 rounded-2xl bg-black p-6 text-white sm:p-8">
+            <div className="mt-0.5 shrink-0 rounded-full border border-white/20 bg-white/10 p-2">
+              <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-white" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-bold text-slate-900 tracking-tight">Ready to launch</p>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <p className="text-xl font-bold tracking-tight text-white">Ready to submit your review?</p>
+              <p className="text-sm leading-relaxed text-slate-300">
                 By clicking &quot;Submit and Process&quot;, you authorize Xperience Ai to proceed with these campaign settings. 
                 You can still request changes via chat or email after submission.
               </p>

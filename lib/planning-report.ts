@@ -3,7 +3,7 @@ import type { Client, PlanningSession } from "@/types/planning";
 
 type ReportRow = [string, unknown];
 interface ReportSection { title: string; rows: ReportRow[] }
-const decision = (value: string) => value === "accept" ? "Accepted" : "Changes requested";
+const decision = (value: string) => value === "accept" ? "ACCEPTED as proposed" : "CHANGES REQUESTED";
 const display = (value: unknown): string => {
   if (Array.isArray(value)) return value.map(display).join(", ") || "Not provided";
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -13,21 +13,24 @@ const display = (value: unknown): string => {
 export function planningReportSections(client: Client, session: PlanningSession): ReportSection[] {
   const p = session.proposal;
   const r = session.response;
+  const summary = (step: { decision: string; comment?: string }) =>
+    `${decision(step.decision)} - ${step.comment ? "client left a comment" : "no comment"}`;
   return [
     { title: "Planning details", rows: [
       ["Status", session.status === "submitted" ? "Submitted" : "Not submitted"],
       ["Planning ID", session.id], ["Submitted at", session.submittedAt ? new Date(session.submittedAt).toISOString() : "Not submitted"],
-      ["Contact phone", client.contactPhone], ["Introduction acknowledged", r.introAcknowledged]
+      ["Contact phone", client.contactPhone]
+    ] },
+    { title: "What the client approved", rows: [
+      ["Services", summary(r.services)],
+      ["Budget", summary(r.budget)],
+      ["Geo targeting", summary(r.geoTarget)]
     ] },
     { title: "Objectives & KPIs", rows: [["Context", p.kpiContext], ...p.kpiBlocks.map(k => [k.title, k.description] as ReportRow)] },
-    { title: "Services", rows: [["Proposed services", p.services.selected], ["Recommended services", p.services.recommended], ["Client selected services", r.services.selectedServices ?? p.services.selected], ["Client decision", decision(r.services.decision)], ["Client comments", r.services.comment]] },
-    { title: "Budget", rows: [["Weekly budget (USD)", p.budget.weeklyBudget], ["Monthly budget (USD)", p.budget.monthlyBudget], ["Google minimum (USD)", p.budget.minimumRequiredBudget], ["Recommendation", p.budget.recommendationNote], ["Client decision", decision(r.budget.decision)], ["Requested budget", r.budget.requestedBudgetNote], ["Client comments", r.budget.comment]] },
-    { title: "Geo targeting", rows: [["Proposed locations", p.geoTarget.visibleLocations], ["Recommendation", p.geoTarget.recommendation], ["Client decision", decision(r.geoTarget.decision)], ["Preferred locations", r.geoTarget.preferredLocations], ["Client comments", r.geoTarget.comment], ["Additional notes", r.geoTarget.note]] },
-    { title: "Assets", rows: [...p.assetRequirements.map(a => [a.title + " instructions", a.instructions] as ReportRow), ["Client logo filename", r.assets.logoFileName], ["Photo filenames", r.assets.photos], ["Client comments", r.assets.comment], ["File availability", "Client asset filenames are recorded by the form; these files are not attached to this report."]] },
-    { title: "Business hours", rows: [...r.businessHours.map(h => [h.day, h.isClosed ? "Closed" : `${h.openTime || "-"} - ${h.closeTime || "-"}`] as ReportRow), ["Hours notes", r.hoursNotes]] },
-    { title: "Business profile & team", rows: [["Selected bio options", r.businessBioSelection.map(id => p.businessBioOptions.find(o => o.id === id)?.label || id)], ...Object.entries(r.missingInfoResponses).map(([id, value]) => [id === "totalFieldworkers" ? "Total fieldworkers" : p.missingInfoChecklist.find(i => i.id === id)?.label || id, value] as ReportRow), ["Acknowledged items", r.acknowledgedMissingItems.map(id => p.missingInfoChecklist.find(i => i.id === id)?.label || id)]] },
-    { title: "Ads & recommendations", rows: [["Ads preview note", p.adsPreviewNote], ["Client feedback", r.adsPreviewComment], ["SEM recommendations", p.recommendations]] },
-    { title: "Final client comments", rows: [["Comments", r.finalComment]] }
+    { title: "Services", rows: [["Client decision", decision(r.services.decision)], ["Client comments", r.services.comment || "No comment"], ["Client selected services", r.services.selectedServices ?? p.services.selected], ["Proposed services", p.services.selected], ["Recommended services", p.services.recommended]] },
+    { title: "Budget", rows: [["Client decision", decision(r.budget.decision)], ["Client comments", r.budget.comment || "No comment"], ["Requested budget", r.budget.requestedBudgetNote || "None - client did not request a different budget"], ["Weekly budget (USD)", p.budget.weeklyBudget], ["Monthly budget (USD)", p.budget.monthlyBudget], ["Google minimum (USD)", p.budget.minimumRequiredBudget], ["Recommendation", p.budget.recommendationNote]] },
+    { title: "Geo targeting", rows: [["Client decision", decision(r.geoTarget.decision)], ["Client comments", r.geoTarget.comment || "No comment"], ["Additional notes", r.geoTarget.note || "No notes"], ["Preferred locations", r.geoTarget.preferredLocations], ["Proposed locations", p.geoTarget.visibleLocations], ["Recommendation", p.geoTarget.recommendation]] },
+    { title: "Business profile & team", rows: [["Selected bio options", r.businessBioSelection.map(id => p.businessBioOptions.find(o => o.id === id)?.label || id)], ...Object.entries(r.missingInfoResponses).map(([id, value]) => [id === "totalFieldworkers" ? "Total fieldworkers" : p.missingInfoChecklist.find(i => i.id === id)?.label || id, value] as ReportRow), ["Acknowledged items", r.acknowledgedMissingItems.map(id => p.missingInfoChecklist.find(i => i.id === id)?.label || id)]] }
   ];
 }
 

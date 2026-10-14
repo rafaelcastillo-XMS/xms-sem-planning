@@ -16,9 +16,6 @@ export function sessionToBuilderValues(
   session: PlanningSession,
   client: Client
 ): PlanningBuilderValues {
-  const logoRequirement = session.proposal.assetRequirements.find(
-    (item) => item.id === "logo"
-  );
   const photoRequirement = session.proposal.assetRequirements.find(
     (item) => item.id === "business-photos"
   );
@@ -36,9 +33,6 @@ export function sessionToBuilderValues(
     geoRecommendation: session.proposal.geoTarget.recommendation,
     locationsText: session.proposal.geoTarget.visibleLocations.join("\n"),
     recommendationsText: session.proposal.recommendations.join("\n"),
-    logoInstructionsText:
-      logoRequirement?.instructions ??
-      "Upload your current logo in high quality for branding consistency.",
     photoInstructionsText:
       photoRequirement?.instructions ??
       "Please send us images that reflect your services, ongoing work, and business.",
@@ -78,17 +72,7 @@ export function builderValuesToProposal(
     recommendations,
     missingInfoChecklist: [],
     adsPreviewNote: values.adsPreviewNote,
-    assetRequirements: previous.assetRequirements.map((item) => {
-      if (item.id === "logo") {
-        return {
-          ...item,
-          instructions: values.logoInstructionsText,
-          acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
-          maxSizeMb: 10,
-          minResolution: "640x640"
-        };
-      }
-
+    assetRequirements: previous.assetRequirements.filter((item) => item.id !== "logo").map((item) => {
       if (item.id === "business-photos") {
         return {
           ...item,
@@ -151,15 +135,6 @@ export function createProposalFromBuilder(values: PlanningBuilderValues): Planni
       visibleLocations: []
     },
     assetRequirements: [
-      {
-        id: "logo",
-        title: "Company Logo",
-        instructions: "Upload your current logo in high quality for branding consistency.",
-        acceptedFileTypes: ["JPEG", "PNG", "BMP", "ICO"],
-        maxSizeMb: 10,
-        minResolution: "640x640",
-        required: true
-      },
       {
         id: "business-photos",
         title: "Business & Work Photos",

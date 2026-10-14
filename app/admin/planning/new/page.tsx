@@ -1,58 +1,40 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import type { DefaultValues } from "react-hook-form";
 
 import { AppShell } from "@/components/app-shell";
 import { AdminPlanningForm } from "@/components/admin/admin-planning-form";
 import { Button } from "@/components/ui/button";
-import { createProposalFromBuilder, sessionToBuilderValues } from "@/lib/planning-mappers";
+import { createProposalFromBuilder } from "@/lib/planning-mappers";
 import { usePlanningStore } from "@/lib/store";
 import { slugify } from "@/lib/utils";
 import { PlanningBuilderValues } from "@/lib/validators";
 
 import { ChevronLeft } from "lucide-react";
 
+const initialValues: DefaultValues<PlanningBuilderValues> = {
+  clientName: "",
+  slug: "",
+  logoUrl: "",
+  selectedServicesText: "",
+  recommendedServicesText: "",
+  weeklyBudget: undefined,
+  monthlyBudget: undefined,
+  minimumRequiredBudget: undefined,
+  budgetNote: "",
+  geoRecommendation: "",
+  locationsText: "",
+  recommendationsText: "",
+  photoInstructionsText: "",
+  businessBioOptionsText: "",
+  adsPreviewNote: ""
+};
+
 export default function NewPlanningPage() {
   const router = useRouter();
-  const { sessions, getClientById, createPlanning } =
-    usePlanningStore();
-
-  const initialValues = useMemo<PlanningBuilderValues>(() => {
-    // ... logic remains same
-    const templateSession = sessions[0];
-    const templateClient = templateSession ? getClientById(templateSession.clientId) : undefined;
-
-    if (templateSession && templateClient) {
-      return {
-        ...sessionToBuilderValues(templateSession, templateClient),
-        clientName: "",
-        slug: "",
-        logoUrl: ""
-      };
-    }
-
-    return {
-      clientName: "",
-      slug: "",
-      logoUrl: "",
-      selectedServicesText: "Gutter Installation",
-      recommendedServicesText: "Gutter Repair",
-      weeklyBudget: 300,
-      monthlyBudget: 1300,
-      minimumRequiredBudget: 1300,
-      budgetNote: "Recommended budget range is 1500-1800/month.",
-      geoRecommendation: "Prioritize high-converting zip codes first.",
-      locationsText: "Jupiter\nStuart",
-      recommendationsText: "Collect reviews weekly",
-      logoInstructionsText: "Upload your current logo in high quality for branding consistency.",
-      photoInstructionsText:
-        "Please send us images that reflect your services, ongoing work, and business.",
-      businessBioOptionsText: "Free Estimate\nFamily-owned & operated",
-      adsPreviewNote: "Final ads may vary based on available content and variables."
-    };
-  }, [sessions, getClientById]);
+  const { createPlanning } = usePlanningStore();
 
   const handleSubmit = async (values: PlanningBuilderValues) => {
     const session = await createPlanning({

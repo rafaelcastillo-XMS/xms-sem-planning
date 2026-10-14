@@ -5,7 +5,7 @@ export const WIZARD_STEPS: WizardStep[] = [
     id: 1,
     section: "overview",
     title: "Overview",
-    description: "Understand KPIs and workflow"
+    description: "Your plan, your feedback, one step at a time"
   },
   {
     id: 2,

@@ -54,7 +54,7 @@ export function createEmptyClientResponse(
     },
     geoTarget: {
       decision: "accept",
-      preferredLocations: proposal?.geoTarget.visibleLocations.slice(0, 2) ?? [],
+      preferredLocations: [],
       note: "",
       comment: ""
     },

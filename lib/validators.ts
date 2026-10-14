@@ -89,17 +89,16 @@ export const planningBuilderSchema = z.object({
   logoUrl: z.string().url("Logo URL must be valid").optional().or(z.literal("")),
   selectedServicesText: z.string().min(3, "Add at least one selected service"),
   recommendedServicesText: z.string().optional(),
-  weeklyBudget: z.coerce.number().min(1),
-  monthlyBudget: z.coerce.number().min(1),
-  minimumRequiredBudget: z.coerce.number().min(1),
-  budgetNote: z.string().min(5).max(800),
-  geoRecommendation: z.string().min(5).max(800),
-  locationsText: z.string().min(3),
-  recommendationsText: z.string().min(5),
-  logoInstructionsText: z.string().min(5).max(500),
-  photoInstructionsText: z.string().min(5).max(800),
-  businessBioOptionsText: z.string().min(5),
-  adsPreviewNote: z.string().min(5)
+  weeklyBudget: z.coerce.number().min(1, "Enter a weekly budget of at least $1"),
+  monthlyBudget: z.coerce.number().min(1, "Enter a monthly budget of at least $1"),
+  minimumRequiredBudget: z.coerce.number().min(1, "Enter Google’s monthly minimum (at least $1)"),
+  budgetNote: z.string().trim().max(800).default(""),
+  geoRecommendation: z.string().trim().max(800).default(""),
+  locationsText: z.string().min(3, "Add at least one target location (3 or more characters)"),
+  recommendationsText: z.string().trim().default(""),
+  photoInstructionsText: z.string().trim().max(800).default(""),
+  businessBioOptionsText: z.string().min(5, "Add a business bio option (5 or more characters)"),
+  adsPreviewNote: z.string().trim().default("")
 });
 
 export type PlanningBuilderValues = z.infer<typeof planningBuilderSchema>;

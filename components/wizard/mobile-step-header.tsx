@@ -67,19 +67,19 @@ export function MobileStepHeader({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="mb-2 text-sm font-semibold text-blue-200 sm:text-base">Your campaign planning</p>
+            {currentStep !== 1 && <p className="mb-2 text-sm font-semibold text-blue-200 sm:text-base">Your campaign planning</p>}
             <p className="break-words text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
               Hi, {companyName}!
             </p>
           </div>
         </div>
 
-        <div className="mb-4">
+        {currentStep !== 1 && <div className="mb-4">
           <h2 className="break-words text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl">
             {stepTitle}
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-200 sm:text-sm">{stepDescription}</p>
-        </div>
+        </div>}
 
         <StepProgressBar currentStep={currentStep} totalSteps={totalSteps} tone="dark" />
       </div>
