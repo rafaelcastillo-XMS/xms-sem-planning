@@ -75,8 +75,16 @@ export default function AdminPlanningDetailPage() {
     const proposal = builderValuesToProposal(values, session.proposal);
     await updateSessionProposal(session.id, proposal);
 
+    const allowedResponseIds = new Set([
+      "totalFieldworkers",
+      ...proposal.missingInfoChecklist.map((item) => item.id)
+    ]);
+
     const filteredResponse = {
       ...session.response,
+      missingInfoResponses: Object.fromEntries(
+        Object.entries(session.response.missingInfoResponses).filter(([id]) => allowedResponseIds.has(id))
+      ),
       businessBioSelection: session.response.businessBioSelection.filter((id) =>
         proposal.businessBioOptions.some((option) => option.id === id)
       ),

@@ -15,6 +15,7 @@ import { PlanningBuilderValues } from "@/lib/validators";
 import { ChevronLeft } from "lucide-react";
 
 const initialValues: DefaultValues<PlanningBuilderValues> = {
+  campaignType: undefined,
   clientName: "",
   slug: "",
   logoUrl: "",
@@ -29,7 +30,8 @@ const initialValues: DefaultValues<PlanningBuilderValues> = {
   recommendationsText: "",
   photoInstructionsText: "",
   businessBioOptionsText: "",
-  adsPreviewNote: ""
+  adsPreviewNote: "",
+  customQuestions: []
 };
 
 export default function NewPlanningPage() {
@@ -57,7 +59,7 @@ export default function NewPlanningPage() {
   return (
     <AppShell
       title="Create New Planning"
-      subtitle="Prepare a client-ready LSA workflow from your internal SEM proposal."
+      subtitle="Prepare a client-ready LSA, Google Ads, or combined workflow from your internal SEM proposal."
     >
       <div className="mb-6">
         <Button asChild variant="link" className="p-0 h-auto text-slate-500 hover:text-primary transition-colors text-xs font-semibold">

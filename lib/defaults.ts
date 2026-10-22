@@ -30,8 +30,8 @@ export function createEmptyClientResponse(
           acc[item.id] = false;
         } else if (item.fieldType === "number") {
           acc[item.id] = 0;
-        } else if (item.fieldType === "multiselect") {
-          acc[item.id] = [];
+        } else if (item.fieldType === "select") {
+          acc[item.id] = "";
         } else {
           acc[item.id] = "";
         }

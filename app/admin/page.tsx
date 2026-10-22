@@ -36,7 +36,7 @@ export default function AdminPage() {
 
   return (
     <AppShell
-      subtitle="Create and manage LSA planning proposals before sharing with clients."
+      subtitle="Create and manage LSA and Google Ads planning proposals before sharing with clients."
       rightSlot={
         <div className="flex gap-2">
           <Button asChild variant="default" className="shadow-lg shadow-primary/20">

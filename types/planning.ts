@@ -77,7 +77,9 @@ export interface BusinessBioOption {
   label: string;
 }
 
-export type MissingFieldType = "text" | "number" | "checkbox" | "multiselect";
+export type CampaignType = "lsa" | "google_ads" | "both";
+
+export type MissingFieldType = "text" | "textarea" | "number" | "select" | "checkbox";
 
 export interface MissingInfoItem {
   id: string;
@@ -89,6 +91,7 @@ export interface MissingInfoItem {
 }
 
 export interface PlanningProposal {
+  campaignType: CampaignType;
   title: string;
   subtitle: string;
   kpiContext: string;

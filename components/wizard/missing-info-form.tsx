@@ -7,37 +7,21 @@ import { Label } from "@/components/ui/label";
 interface MissingInfoFormProps {
   items: MissingInfoItem[];
   values: Record<string, MissingInfoResponseValue>;
-  acknowledged: string[];
   onValueChange: (id: string, value: MissingInfoResponseValue) => void;
-  onAcknowledgedChange: (items: string[]) => void;
 }
 
 export function MissingInfoForm({
   items,
   values,
-  acknowledged,
-  onValueChange,
-  onAcknowledgedChange
+  onValueChange
 }: MissingInfoFormProps) {
   return (
     <div className="space-y-3">
       {items.map((item) => {
-        const acknowledgedItem = acknowledged.includes(item.id);
         return (
           <div key={item.id} className="space-y-2 rounded-xl border bg-white p-3">
             <div className="flex items-start gap-2">
-              <Checkbox
-                id={`ack-${item.id}`}
-                checked={acknowledgedItem}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    onAcknowledgedChange([...acknowledged, item.id]);
-                    return;
-                  }
-                  onAcknowledgedChange(acknowledged.filter((value) => value !== item.id));
-                }}
-              />
-              <Label htmlFor={`ack-${item.id}`} className="leading-snug">
+              <Label htmlFor={`value-${item.id}`} className="leading-snug">
                 {item.label}
                 {item.required ? <span className="text-destructive"> *</span> : null}
               </Label>
@@ -47,6 +31,7 @@ export function MissingInfoForm({
 
             {item.fieldType === "number" ? (
               <Input
+                id={`value-${item.id}`}
                 type="number"
                 value={String(values[item.id] ?? "")}
                 onChange={(event) => onValueChange(item.id, Number(event.target.value))}
@@ -55,19 +40,33 @@ export function MissingInfoForm({
             ) : null}
 
             {item.fieldType === "text" ? (
+              <Input
+                id={`value-${item.id}`}
+                value={String(values[item.id] ?? "")}
+                onChange={(event) => onValueChange(item.id, event.target.value)}
+                placeholder="Add answer"
+              />
+            ) : null}
+
+            {item.fieldType === "textarea" ? (
               <Textarea
+                id={`value-${item.id}`}
                 value={String(values[item.id] ?? "")}
                 onChange={(event) => onValueChange(item.id, event.target.value)}
                 placeholder="Add details"
               />
             ) : null}
 
-            {item.fieldType === "multiselect" ? (
-              <Textarea
+            {item.fieldType === "select" ? (
+              <select
+                id={`value-${item.id}`}
                 value={String(values[item.id] ?? "")}
                 onChange={(event) => onValueChange(item.id, event.target.value)}
-                placeholder="List selected options separated by commas"
-              />
+                className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <option value="">Select an option</option>
+                {item.options?.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
             ) : null}
 
             {item.fieldType === "checkbox" ? (

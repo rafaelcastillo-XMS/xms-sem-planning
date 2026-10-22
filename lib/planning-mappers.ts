@@ -21,6 +21,7 @@ export function sessionToBuilderValues(
   );
 
   return {
+    campaignType: session.proposal.campaignType ?? "lsa",
     clientName: client.name,
     slug: client.slug,
     logoUrl: client.logoUrl ?? "",
@@ -39,7 +40,15 @@ export function sessionToBuilderValues(
     businessBioOptionsText: session.proposal.businessBioOptions
       .map((option) => option.label)
       .join("\n"),
-    adsPreviewNote: session.proposal.adsPreviewNote
+    adsPreviewNote: session.proposal.adsPreviewNote,
+    customQuestions: session.proposal.missingInfoChecklist.map((item) => ({
+      id: item.id,
+      label: item.label,
+      description: item.description ?? "",
+      required: item.required,
+      fieldType: item.fieldType,
+      optionsText: item.options?.join("\n") ?? ""
+    }))
   };
 }
 
@@ -52,9 +61,23 @@ export function builderValuesToProposal(
   const locations = splitLines(values.locationsText);
   const recommendations = splitLines(values.recommendationsText);
   const bioOptions = splitLines(values.businessBioOptionsText);
+  const customQuestions = values.customQuestions.map((question) => ({
+    id: question.id,
+    label: question.label,
+    description: question.description || undefined,
+    required: question.required,
+    fieldType: question.fieldType,
+    options: question.fieldType === "select" ? splitLines(question.optionsText) : undefined
+  }));
 
   return {
     ...previous,
+    campaignType: values.campaignType,
+    title: values.campaignType === "lsa"
+      ? "Local Service Ads - Google Guaranteed"
+      : values.campaignType === "google_ads"
+        ? "Google Ads"
+        : "Local Service Ads + Google Ads",
     services: {
       selected: selectedServices,
       recommended: recommendedServices
@@ -70,7 +93,7 @@ export function builderValuesToProposal(
       visibleLocations: locations
     },
     recommendations,
-    missingInfoChecklist: [],
+    missingInfoChecklist: customQuestions,
     adsPreviewNote: values.adsPreviewNote,
     assetRequirements: previous.assetRequirements.filter((item) => item.id !== "logo").map((item) => {
       if (item.id === "business-photos") {
@@ -94,6 +117,7 @@ export function builderValuesToProposal(
 
 export function createProposalFromBuilder(values: PlanningBuilderValues): PlanningProposal {
   const baseProposal = builderValuesToProposal(values, {
+    campaignType: values.campaignType,
     title: "Local Service Ads - Google Guaranteed",
     subtitle: "SEM Plan & Setup",
     kpiContext:

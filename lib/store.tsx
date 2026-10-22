@@ -72,7 +72,8 @@ const normalizeSeedState = (state: PlanningSeedState): PlanningSeedState => ({
     ...session,
     proposal: {
       ...session.proposal,
-      missingInfoChecklist: [],
+      campaignType: session.proposal.campaignType ?? "lsa",
+      missingInfoChecklist: session.proposal.missingInfoChecklist ?? [],
       assetRequirements: session.proposal.assetRequirements.map((requirement) => {
         if (requirement.id === "logo" && !requirement.instructions) {
           return { ...requirement, instructions: LOGO_INSTRUCTIONS };

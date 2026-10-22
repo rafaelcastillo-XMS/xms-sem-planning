@@ -79,7 +79,27 @@ export const clientResponseSchema = z.object({
 
 export type ClientResponseFormValues = z.infer<typeof clientResponseSchema>;
 
+const customQuestionSchema = z.object({
+  id: z.string(),
+  label: z.string().trim().min(2, "Enter the question"),
+  description: z.string().trim().max(300).default(""),
+  required: z.boolean().default(false),
+  fieldType: z.enum(["text", "textarea", "number", "select", "checkbox"]),
+  optionsText: z.string().trim().default("")
+}).superRefine((question, ctx) => {
+  if (question.fieldType === "select" && !question.optionsText.split(/\n|,/).some((option) => option.trim())) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["optionsText"],
+      message: "Add at least one option"
+    });
+  }
+});
+
 export const planningBuilderSchema = z.object({
+  campaignType: z.enum(["lsa", "google_ads", "both"], {
+    required_error: "Choose LSA, Google Ads, or both"
+  }),
   clientName: z.string().min(2, "Company name is required").max(80),
   slug: z
     .string()
@@ -97,8 +117,17 @@ export const planningBuilderSchema = z.object({
   locationsText: z.string().min(3, "Add at least one target location (3 or more characters)"),
   recommendationsText: z.string().trim().default(""),
   photoInstructionsText: z.string().trim().max(800).default(""),
-  businessBioOptionsText: z.string().min(5, "Add a business bio option (5 or more characters)"),
-  adsPreviewNote: z.string().trim().default("")
+  businessBioOptionsText: z.string().default(""),
+  adsPreviewNote: z.string().trim().default(""),
+  customQuestions: z.array(customQuestionSchema).default([])
+}).superRefine((values, ctx) => {
+  if (values.campaignType !== "google_ads" && values.businessBioOptionsText.trim().length < 5) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["businessBioOptionsText"],
+      message: "Add a business bio option (5 or more characters)"
+    });
+  }
 });
 
 export type PlanningBuilderValues = z.infer<typeof planningBuilderSchema>;

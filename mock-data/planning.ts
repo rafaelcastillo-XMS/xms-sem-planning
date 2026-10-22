@@ -4,6 +4,7 @@ import { PlanningSession } from "@/types/planning";
 const now = "2026-04-08T10:00:00.000Z";
 
 const gutterGuardiansProposal: PlanningSession["proposal"] = {
+  campaignType: "lsa",
   title: "Local Service Ads - Google Guaranteed",
   subtitle: "SEM Plan & Setup",
   kpiContext:

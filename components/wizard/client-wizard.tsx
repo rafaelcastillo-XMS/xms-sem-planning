@@ -26,6 +26,7 @@ import { BudgetSummaryCard } from "@/components/wizard/budget-summary-card";
 import { CompactStepCard } from "@/components/wizard/compact-step-card";
 import { DecisionCardGroup } from "@/components/wizard/decision-card-group";
 import { GeoTargetSelector } from "@/components/wizard/geo-target-selector";
+import { MissingInfoForm } from "@/components/wizard/missing-info-form";
 import { MobileStepHeader } from "@/components/wizard/mobile-step-header";
 import { ServiceCardList } from "@/components/wizard/service-card-list";
 import { WizardLayout } from "@/components/wizard/wizard-layout";
@@ -40,7 +41,7 @@ import {
   ClientResponseFormValues
 } from "@/lib/validators";
 import { formatCurrency } from "@/lib/utils";
-import { Client, PlanningSession, ProposalSection } from "@/types/planning";
+import { Client, PlanningSession } from "@/types/planning";
 
 interface ClientWizardProps {
   client: Client;
@@ -48,12 +49,6 @@ interface ClientWizardProps {
   onSaveDraft: (values: ClientResponseFormValues) => void | Promise<void>;
   onSubmitFinal: (values: ClientResponseFormValues) => void | Promise<void>;
 }
-
-const SECTION_TO_STEP = Object.fromEntries(
-  WIZARD_STEPS.map(step => [step.section, step.id])
-) as Record<ProposalSection, number>;
-
-const TOTAL_STEPS = WIZARD_STEPS.length;
 
 export function ClientWizard({
   client,
@@ -91,16 +86,29 @@ export function ClientWizard({
 
   const values = watch();
 
-  const currentStepMeta = WIZARD_STEPS[currentStep - 1];
+  const includesLsa = (session.proposal.campaignType ?? "lsa") !== "google_ads";
+  const wizardSteps = WIZARD_STEPS.filter((step) => {
+    if ((step.section === "bio" || step.section === "ads") && !includesLsa) return false;
+    if (step.section === "team" && !includesLsa && session.proposal.missingInfoChecklist.length === 0) return false;
+    return true;
+  });
+  const reviewSections = REVIEW_SECTIONS.filter((section) => {
+    if ((section.id === "bio" || section.id === "ads") && !includesLsa) return false;
+    if (section.id === "team" && !includesLsa && session.proposal.missingInfoChecklist.length === 0) return false;
+    return true;
+  });
+  const totalSteps = wizardSteps.length;
+  const currentStepMeta = wizardSteps[currentStep - 1];
+  const currentSection = currentStepMeta.section;
   const validateStep = async () => {
     setStepError(null);
 
-    if (currentStep === 1) {
+    if (currentSection === "overview") {
       setValue("introAcknowledged", true, { shouldDirty: true });
       return true;
     }
 
-    if (currentStep === 2) {
+    if (currentSection === "services") {
       const selected = getValues("services.selectedServices") ?? session.proposal.services.selected;
       if (!selected.length) {
         setStepError("Please select at least one service to promote.");
@@ -110,11 +118,11 @@ export function ClientWizard({
       return trigger(["services.decision", "services.selectedServices"]);
     }
 
-    if (currentStep === 3) {
+    if (currentSection === "budget") {
       return trigger(["budget.decision", "budget.requestedBudgetNote", "budget.comment"]);
     }
 
-    if (currentStep === 4) {
+    if (currentSection === "geo") {
       return trigger([
         "geoTarget.decision",
         "geoTarget.preferredLocations",
@@ -123,7 +131,7 @@ export function ClientWizard({
       ]);
     }
 
-    if (currentStep === 5) {
+    if (currentSection === "bio") {
       const ok = await trigger(["businessBioSelection"]);
       if (!ok) return false;
       if (getValues("businessBioSelection").length === 0) {
@@ -133,24 +141,34 @@ export function ClientWizard({
       return true;
     }
 
-    if (currentStep === 6) {
+    if (currentSection === "team") {
       const value = Number(getValues("missingInfoResponses.totalFieldworkers") ?? 0);
-      if (!value || Number.isNaN(value) || value < 1) {
+      if (includesLsa && (!value || Number.isNaN(value) || value < 1)) {
         setStepError("Please enter the total number of fieldworkers (1 or more).");
+        return false;
+      }
+      const responses = getValues("missingInfoResponses");
+      const unanswered = session.proposal.missingInfoChecklist.find((item) => {
+        if (!item.required) return false;
+        const answer = responses[item.id];
+        return answer === undefined || answer === "" || answer === false;
+      });
+      if (unanswered) {
+        setStepError(`Please answer: ${unanswered.label}`);
         return false;
       }
       return true;
     }
 
-    if (currentStep === 7) {
+    if (currentSection === "ads") {
       return trigger(["adsPreviewComment"]);
     }
 
-    if (currentStep === 8) {
+    if (currentSection === "recommendations") {
       return true;
     }
 
-    if (currentStep === 9) {
+    if (currentSection === "comments") {
       return trigger(["finalComment"]);
     }
 
@@ -171,7 +189,7 @@ export function ClientWizard({
     setIsSaving(true);
     try {
       const snapshot = getValues();
-      if (currentStep === TOTAL_STEPS) {
+      if (currentStep === totalSteps) {
         if (!await trigger([
           "introAcknowledged", "services", "budget", "geoTarget",
           "businessBioSelection", "missingInfoResponses", "adsPreviewComment", "finalComment"
@@ -183,7 +201,7 @@ export function ClientWizard({
         setSubmitted(true);
       } else {
         await onSaveDraft(snapshot);
-        setCurrentStep((step) => Math.min(TOTAL_STEPS, step + 1));
+        setCurrentStep((step) => Math.min(totalSteps, step + 1));
       }
     } catch {
       setStepError("Could not save your answers. Please try again before continuing.");
@@ -221,7 +239,7 @@ export function ClientWizard({
             
             <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-100">
               <p className="text-xs text-slate-600 font-medium italic text-center">
-                &quot;Our team will review your responses and reach out shortly to finalize the LSA launch details.&quot;
+                &quot;Our team will review your responses and reach out shortly to finalize the campaign launch details.&quot;
               </p>
             </div>
 
@@ -260,7 +278,7 @@ export function ClientWizard({
           logoUrl={client.logoUrl}
           companyName={client.name}
           currentStep={currentStep}
-          totalSteps={WIZARD_STEPS.length}
+          totalSteps={totalSteps}
           stepTitle={currentStepMeta.title}
           stepDescription={currentStepMeta.description}
         />
@@ -268,7 +286,7 @@ export function ClientWizard({
       onBack={currentStep > 1 && !isSaving ? handleBack : undefined}
       onNext={handleNext}
       disableNext={isSaving}
-      nextLabel={isSaving ? "Saving…" : currentStep === TOTAL_STEPS ? "Submit and Process" : currentStep === 1 ? "Let’s get started" : "Continue"}
+      nextLabel={isSaving ? "Saving…" : currentStep === totalSteps ? "Submit and Process" : currentSection === "overview" ? "Let’s get started" : "Continue"}
     >
       {stepError ? (
         <Card className="border-amber-300 bg-amber-50">
@@ -279,11 +297,11 @@ export function ClientWizard({
         </Card>
       ) : null}
 
-      {currentStep === 1 ? (
+      {currentSection === "overview" ? (
         <PlanningIntroduction proposal={session.proposal} />
       ) : null}
 
-      {currentStep === 2 ? (
+      {currentSection === "services" ? (
         <Card className="shadow-sm">
           <CardContent className="p-5 sm:p-6">
             <ServiceCardList
@@ -303,7 +321,7 @@ export function ClientWizard({
         </Card>
       ) : null}
 
-      {currentStep === 3 ? (
+      {currentSection === "budget" ? (
         <CompactStepCard title="Budget & Bidding" description="Confirm plan and request adjustments if needed.">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="h-4 w-4 text-primary" />
@@ -326,7 +344,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 4 ? (
+      {currentSection === "geo" ? (
         <CompactStepCard title="Geo Target" description="Confirm and adjust preferred target areas.">
           <div className="flex items-center gap-2 mb-2">
             <MapPin className="h-4 w-4 text-primary" />
@@ -374,7 +392,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 5 ? (
+      {currentSection === "bio" ? (
         <CompactStepCard title="Business Bio" description="Choose at least one category that best fits your business.">
           <div className="flex items-center gap-2 mb-2">
             <Type className="h-4 w-4 text-primary" />
@@ -393,16 +411,16 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 6 ? (
+      {currentSection === "team" ? (
         <CompactStepCard
-          title="Team Information"
-          description="Tell us about your active field service team."
+          title={includesLsa ? "Team Information" : "Additional Information"}
+          description={includesLsa ? "Tell us about your active field service team." : "Complete the questions from our SEM team."}
         >
-          <div className="flex items-center gap-2 mb-2">
+          {includesLsa ? <div className="flex items-center gap-2 mb-2">
             <Users className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-slate-800 tracking-tight">Field Team</span>
-          </div>
-          <div className="rounded-xl border bg-white p-4 shadow-sm space-y-2">
+          </div> : null}
+          {includesLsa ? <div className="rounded-xl border bg-white p-4 shadow-sm space-y-2">
             <div className="flex items-start gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0 fill-primary/15" />
               <div className="flex-1">
@@ -439,11 +457,20 @@ export function ClientWizard({
               }
               className="w-full rounded-xl border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
-          </div>
+          </div> : null}
+          {session.proposal.missingInfoChecklist.length > 0 ? (
+            <div className="mt-4">
+              <MissingInfoForm
+                items={session.proposal.missingInfoChecklist}
+                values={values.missingInfoResponses || {}}
+                onValueChange={(id, value) => setValue("missingInfoResponses", { ...(values.missingInfoResponses || {}), [id]: value }, { shouldDirty: true, shouldValidate: true })}
+              />
+            </div>
+          ) : null}
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 7 ? (
+      {currentSection === "ads" ? (
         <CompactStepCard title="Ads Preview" description="Preview of how your business will appear in Google LSA.">
           <div className="flex items-center gap-2 mb-2">
             <Megaphone className="h-4 w-4 text-primary" />
@@ -483,7 +510,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 8 ? (
+      {currentSection === "recommendations" ? (
         <CompactStepCard title="SEM Team Recommendations" description="Review the recommendations from our SEM team.">
           <div className="flex items-center gap-2 mb-2">
             <ClipboardCheck className="h-4 w-4 text-primary" />
@@ -507,7 +534,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 9 ? (
+      {currentSection === "comments" ? (
         <CompactStepCard
           title="Additional Comments"
           description="Share any final context before the SEM team processes your plan."
@@ -538,7 +565,7 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentStep === 10 ? (
+      {currentSection === "review" ? (
         <CompactStepCard title="Your plan at a glance" description="Review the details below before sending your answers to the SEM team.">
           <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-950">
             <Flag aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
@@ -548,11 +575,11 @@ export function ClientWizard({
             </div>
           </div>
           <div className="space-y-4">
-            {REVIEW_SECTIONS.map((section) => (
+            {reviewSections.map((section) => (
               <ReviewSectionCard
                 key={section.id}
                 title={section.title}
-                onEdit={() => setCurrentStep(SECTION_TO_STEP[section.id])}
+                onEdit={() => setCurrentStep(wizardSteps.findIndex((step) => step.section === section.id) + 1)}
               >
                 <div className="space-y-3 text-sm leading-relaxed">
                   {section.id === "services" && (
@@ -597,7 +624,15 @@ export function ClientWizard({
                     </>
                   )}
                   {section.id === "team" && (
-                    <p><span className="mr-2 text-2xl font-bold text-slate-950">{String(values.missingInfoResponses?.totalFieldworkers ?? "—")}</span> active fieldworkers</p>
+                    <div className="space-y-3">
+                      {includesLsa ? <p><span className="mr-2 text-2xl font-bold text-slate-950">{String(values.missingInfoResponses?.totalFieldworkers ?? "—")}</span> active fieldworkers</p> : null}
+                      {session.proposal.missingInfoChecklist.map((item) => (
+                        <div key={item.id} className="rounded-lg bg-slate-50 p-3">
+                          <p className="text-xs font-semibold text-slate-500">{item.label}</p>
+                          <p className="mt-1 whitespace-pre-wrap text-slate-900">{String(values.missingInfoResponses?.[item.id] ?? "") || "No answer provided."}</p>
+                        </div>
+                      ))}
+                    </div>
                   )}
                   {section.id === "ads" && (
                     <p className="whitespace-pre-wrap">{values.adsPreviewComment || "No ad feedback added."}</p>

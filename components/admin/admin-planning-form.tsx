@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { readLogo } from "@/lib/logo-upload";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type DefaultValues } from "react-hook-form";
-import { Eye, Save, X, Check, Info, Briefcase, DollarSign, MapPin, ClipboardCheck, Zap, Link as LinkIcon } from "lucide-react";
+import { useFieldArray, useForm, type DefaultValues } from "react-hook-form";
+import { Eye, Save, X, Check, Info, Briefcase, DollarSign, MapPin, ClipboardCheck, Zap, Link as LinkIcon, Plus, Trash2, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { GeneratedPublicUrlCard } from "@/components/admin/generated-public-url-card";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import {
   planningBuilderSchema,
@@ -54,6 +55,12 @@ export function AdminPlanningForm({
   });
 
   const { register, handleSubmit, formState } = form;
+  const { fields: customQuestions, append: appendQuestion, remove: removeQuestion } = useFieldArray({
+    control: form.control,
+    name: "customQuestions"
+  });
+  const campaignType = form.watch("campaignType");
+  const includesLsa = campaignType === "lsa" || campaignType === "both";
 
   return (
     <form onSubmit={handleSubmit(async (values) => {
@@ -61,6 +68,36 @@ export function AdminPlanningForm({
       try { await onSubmit(values); } catch { setSaveError("Could not save to Supabase. Please try again. Your changes are still here."); }
     })} className="grid gap-6 pb-20 md:grid-cols-[1fr_340px]">
       <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-700">
+        <Card className="premium-card overflow-hidden border-primary/20">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <Megaphone className="h-4 w-4 shrink-0 text-white" />
+              Choose the advertising plan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <p className="text-sm text-slate-600">What does this client need? Your selection determines the default planning questions.</p>
+            <RadioGroup
+              value={campaignType}
+              onValueChange={(value) => form.setValue("campaignType", value as PlanningBuilderValues["campaignType"], { shouldDirty: true, shouldValidate: true })}
+              className="grid gap-3 sm:grid-cols-3"
+            >
+              {[
+                ["lsa", "LSA", "Local Services Ads"],
+                ["google_ads", "Google Ads", "Search campaign planning"],
+                ["both", "Both", "LSA + Google Ads"]
+              ].map(([value, title, description]) => (
+                <Label key={value} htmlFor={`campaign-${value}`} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors", campaignType === value ? "border-primary bg-primary/5" : "border-slate-200 hover:border-slate-300")}>
+                  <RadioGroupItem id={`campaign-${value}`} value={value} className="mt-0.5" />
+                  <span><span className="block text-sm font-bold text-slate-900">{title}</span><span className="mt-1 block text-xs font-normal text-slate-500">{description}</span></span>
+                </Label>
+              ))}
+            </RadioGroup>
+            <FieldError message={formState.errors.campaignType?.message} />
+          </CardContent>
+        </Card>
+
+        {campaignType ? <>
         <Card className="premium-card overflow-hidden">
           <CardHeader className="mb-5 bg-black py-4 text-white">
             <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
@@ -139,7 +176,7 @@ export function AdminPlanningForm({
                 id="selectedServicesText"
                 aria-describedby="selectedServicesText-hint selectedServicesText-error"
                 aria-invalid={!!formState.errors.selectedServicesText} aria-required="true" {...register("selectedServicesText")}
-                placeholder={"Service / keyword 1\nService / keyword 2"}
+                placeholder={"Service 1\nService 2"}
                 className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive min-h-[120px]"
               />
               <FieldError id="selectedServicesText-error" message={formState.errors.selectedServicesText?.message} />
@@ -154,7 +191,7 @@ export function AdminPlanningForm({
                 id="recommendedServicesText"
                 aria-describedby="recommendedServicesText-hint recommendedServicesText-error"
                 aria-invalid={!!formState.errors.recommendedServicesText} {...register("recommendedServicesText")}
-                placeholder={"Recommended service / keyword 1\nRecommended service / keyword 2"}
+                placeholder={"Recommended service 1\nRecommended service 2"}
                 className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive min-h-[100px]"
               />
               <FieldError id="recommendedServicesText-error" message={formState.errors.recommendedServicesText?.message} />
@@ -175,7 +212,7 @@ export function AdminPlanningForm({
                 <Label htmlFor="weeklyBudget" className="text-xs font-semibold uppercase text-slate-500">SEM recommended weekly minimum (required)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <Input type="number" id="weeklyBudget" aria-describedby="weeklyBudget-error" aria-invalid={!!formState.errors.weeklyBudget} aria-required="true" {...register("weeklyBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+                  <Input type="number" step="0.01" placeholder="000.00" id="weeklyBudget" aria-describedby="weeklyBudget-error" aria-invalid={!!formState.errors.weeklyBudget} aria-required="true" {...register("weeklyBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
                 </div>
                 <FieldError id="weeklyBudget-error" message={formState.errors.weeklyBudget?.message} />
               </div>
@@ -183,7 +220,7 @@ export function AdminPlanningForm({
                 <Label htmlFor="monthlyBudget" className="text-xs font-semibold uppercase text-slate-500">SEM recommended monthly minimum (required)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <Input type="number" id="monthlyBudget" aria-describedby="monthlyBudget-error" aria-invalid={!!formState.errors.monthlyBudget} aria-required="true" {...register("monthlyBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+                  <Input type="number" step="0.01" placeholder="000.00" id="monthlyBudget" aria-describedby="monthlyBudget-error" aria-invalid={!!formState.errors.monthlyBudget} aria-required="true" {...register("monthlyBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
                 </div>
                 <FieldError id="monthlyBudget-error" message={formState.errors.monthlyBudget?.message} />
               </div>
@@ -191,7 +228,7 @@ export function AdminPlanningForm({
                 <Label htmlFor="minimumRequiredBudget" className="text-xs font-semibold uppercase text-slate-500">Google required monthly minimum (required)</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                  <Input id="minimumRequiredBudget" aria-describedby="google-minimum-hint minimumRequiredBudget-error" type="number" aria-invalid={!!formState.errors.minimumRequiredBudget} aria-required="true" {...register("minimumRequiredBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+                  <Input id="minimumRequiredBudget" aria-describedby="google-minimum-hint minimumRequiredBudget-error" type="number" step="0.01" placeholder="000.00" aria-invalid={!!formState.errors.minimumRequiredBudget} aria-required="true" {...register("minimumRequiredBudget")} className="pl-7 bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
                 </div>
                 <FieldError id="minimumRequiredBudget-error" message={formState.errors.minimumRequiredBudget?.message} />
                 <p id="google-minimum-hint" className="text-xs text-slate-600">Enter Google’s current monthly minimum for this client’s industry. This amount is entered manually by SEM.</p>
@@ -218,20 +255,21 @@ export function AdminPlanningForm({
                 id="locationsText"
                 aria-describedby="locationsText-hint locationsText-error"
                 aria-invalid={!!formState.errors.locationsText} aria-required="true" {...register("locationsText")}
-                placeholder={"City / location 1\nCity / location 2\nZIP code"}
+                placeholder={"Fort Pierce, FL 34950\nPort St. Lucie, FL 34952"}
                 className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive min-h-[100px]"
               />
               <FieldError id="locationsText-error" message={formState.errors.locationsText?.message} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="geoRecommendation" className="text-xs font-semibold uppercase text-slate-500">Geo target recommendation by XMS (optional)</Label>
-              <Textarea id="geoRecommendation" aria-describedby="geoRecommendation-error" aria-invalid={!!formState.errors.geoRecommendation} {...register("geoRecommendation")} placeholder="e.g., Prioritize cities or ZIP codes within the client’s service area." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+              <p id="geoRecommendation-hint" className="text-xs leading-relaxed text-slate-600">Add the locations XMS recommends based on our research, in addition to those requested by the client. This field is optional.</p>
+              <Textarea id="geoRecommendation" aria-describedby="geoRecommendation-hint geoRecommendation-error" aria-invalid={!!formState.errors.geoRecommendation} {...register("geoRecommendation")} placeholder={"Fort Pierce, FL 34950\nVero Beach, FL 32960"} className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
               <FieldError id="geoRecommendation-error" message={formState.errors.geoRecommendation?.message} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="premium-card overflow-hidden">
+        {includesLsa ? <Card className="premium-card overflow-hidden">
           <CardHeader className="mb-5 bg-black py-4 text-white">
             <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
               <ClipboardCheck className="h-4 w-4 shrink-0 text-white" />
@@ -264,23 +302,88 @@ export function AdminPlanningForm({
               <Textarea id="adsPreviewNote" aria-describedby="adsPreviewNote-error" aria-invalid={!!formState.errors.adsPreviewNote} {...register("adsPreviewNote")} placeholder="Describe what the client should review in the ads and any details that may vary." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
               <FieldError id="adsPreviewNote-error" message={formState.errors.adsPreviewNote?.message} />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="recommendationsText" className="text-xs font-semibold uppercase text-slate-500">Recommendations (optional)</Label>
-              <p id="recommendationsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
-                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
-                One recommendation per line. Press Enter to add another.
-              </p>
-              <Textarea
-                id="recommendationsText"
-                aria-describedby="recommendationsText-hint recommendationsText-error"
-                aria-invalid={!!formState.errors.recommendationsText} {...register("recommendationsText")}
-                placeholder={"e.g., Request reviews after completed jobs\ne.g., Keep business hours up to date"}
-                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive"
-              />
-              <FieldError id="recommendationsText-error" message={formState.errors.recommendationsText?.message} />
-            </div>
+          </CardContent>
+        </Card> : null}
+
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <ClipboardCheck className="h-4 w-4 shrink-0 text-white" />
+              SEM Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            <Label htmlFor="recommendationsText" className="text-xs font-semibold uppercase text-slate-500">Recommendations (optional)</Label>
+            <p id="recommendationsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+              <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+              One recommendation per line. Press Enter to add another.
+            </p>
+            <Textarea id="recommendationsText" aria-describedby="recommendationsText-hint recommendationsText-error" aria-invalid={!!formState.errors.recommendationsText} {...register("recommendationsText")} placeholder={"e.g., Request reviews after completed jobs\ne.g., Keep business hours up to date"} className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
+            <FieldError id="recommendationsText-error" message={formState.errors.recommendationsText?.message} />
           </CardContent>
         </Card>
+
+        <Card className="premium-card overflow-hidden">
+          <CardHeader className="mb-5 bg-black py-4 text-white">
+            <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
+              <Plus className="h-4 w-4 shrink-0 text-white" />
+              Custom client questions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <p className="text-sm text-slate-600">Add any extra information the client should provide. These questions will appear in their planning flow.</p>
+            {customQuestions.map((question, index) => {
+              const fieldType = form.watch(`customQuestions.${index}.fieldType`);
+              return (
+                <div key={question.id} className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-slate-800">Question {index + 1}</p>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeQuestion(index)} className="text-slate-500 hover:text-destructive">
+                      <Trash2 className="mr-1.5 h-4 w-4" /> Remove
+                    </Button>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor={`custom-question-${index}`}>Question</Label>
+                    <Input id={`custom-question-${index}`} {...register(`customQuestions.${index}.label`)} placeholder="e.g., What is your preferred launch date?" />
+                    <FieldError message={formState.errors.customQuestions?.[index]?.label?.message} />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor={`custom-type-${index}`}>Answer type</Label>
+                      <select id={`custom-type-${index}`} {...register(`customQuestions.${index}.fieldType`)} className="h-10 rounded-md border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                        <option value="text">Short text</option>
+                        <option value="textarea">Long text</option>
+                        <option value="number">Number</option>
+                        <option value="select">Select</option>
+                        <option value="checkbox">Checkbox</option>
+                      </select>
+                    </div>
+                    <Label className="flex items-center gap-2 self-end rounded-md border bg-white px-3 py-2.5 text-sm font-medium">
+                      <input type="checkbox" {...register(`customQuestions.${index}.required`)} className="h-4 w-4 accent-primary" />
+                      Required answer
+                    </Label>
+                  </div>
+                  {fieldType === "select" ? (
+                    <div className="grid gap-2">
+                      <Label htmlFor={`custom-options-${index}`}>Options</Label>
+                      <Textarea id={`custom-options-${index}`} {...register(`customQuestions.${index}.optionsText`)} placeholder={"Option 1\nOption 2"} className="min-h-20 bg-white" />
+                      <p className="text-xs text-slate-500">One option per line.</p>
+                      <FieldError message={formState.errors.customQuestions?.[index]?.optionsText?.message} />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+            <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => appendQuestion({ id: `question-${Date.now()}`, label: "", description: "", required: false, fieldType: "text", optionsText: "" })}>
+              <Plus className="mr-2 h-4 w-4" /> Add a new question
+            </Button>
+          </CardContent>
+        </Card>
+        </> : (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
+            Choose LSA, Google Ads, or both to load the planning questions.
+          </div>
+        )}
       </div>
 
       <aside className="space-y-6 md:sticky md:top-6 md:h-fit animate-in fade-in slide-in-from-right-4 duration-700 delay-100 fill-mode-both">
@@ -305,7 +408,7 @@ export function AdminPlanningForm({
                 "w-full transition-all active:scale-[0.98] font-bold",
                 isSuccess ? "bg-emerald-600 hover:bg-emerald-600 shadow-emerald-200" : "bg-primary hover:bg-primary/90 shadow-primary/20"
               )}
-              disabled={formState.isSubmitting || readingLogo}
+              disabled={formState.isSubmitting || readingLogo || !campaignType}
             >
               {isSuccess ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
               {formState.isSubmitting ? "Saving…" : isSuccess ? "Changes saved" : submitLabel}
@@ -342,7 +445,7 @@ export function AdminPlanningForm({
             "w-full font-bold sm:w-auto sm:min-w-60",
             isSuccess ? "bg-emerald-600 hover:bg-emerald-600" : "bg-primary hover:bg-primary/90"
           )}
-          disabled={formState.isSubmitting || readingLogo}
+          disabled={formState.isSubmitting || readingLogo || !campaignType}
         >
           {isSuccess ? <Check className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
           {formState.isSubmitting ? "Saving…" : isSuccess ? "Changes saved" : submitLabel}
