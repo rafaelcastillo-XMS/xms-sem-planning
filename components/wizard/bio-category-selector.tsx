@@ -70,21 +70,32 @@ export function BioCategorySelector({
           const disabled = !isSelected && selected.length >= max;
 
           return (
-            <Button
+            <button
               key={option.id}
               type="button"
-              variant="outline"
               onClick={() => toggle(option.id)}
               disabled={disabled}
               aria-pressed={isSelected}
               className={cn(
-                "h-auto min-h-11 justify-start rounded-xl px-3 py-2 text-left text-sm",
-                isSelected && "border-primary bg-primary/10 text-primary"
+                "grid min-h-14 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold leading-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                isSelected
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-slate-200 bg-slate-50 text-slate-900 hover:border-slate-300 hover:bg-white"
               )}
             >
-              {isSelected ? <Check className="mr-2 h-4 w-4" /> : <span className="mr-6" />}
-              {option.label}
-            </Button>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
+                  isSelected
+                    ? "border-primary bg-primary text-white"
+                    : "border-slate-300 bg-white"
+                )}
+              >
+                {isSelected ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+              </span>
+              <span className="min-w-0 break-words">{option.label}</span>
+            </button>
           );
         })}
       </div>

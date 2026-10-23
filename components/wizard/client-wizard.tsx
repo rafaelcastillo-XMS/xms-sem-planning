@@ -50,6 +50,9 @@ interface ClientWizardProps {
   onSubmitFinal: (values: ClientResponseFormValues) => void | Promise<void>;
 }
 
+const withoutListPrefix = (item: string) =>
+  item.replace(/^\s*(?:[-•]\s*|\d+[.)]\s*)/, "");
+
 export function ClientWizard({
   client,
   session,
@@ -521,14 +524,13 @@ export function ClientWizard({
           <div className="space-y-4">
             <div className="space-y-2 rounded-xl border border-secondary bg-secondary/20 p-4">
               <p className="text-sm font-bold text-slate-800">SEM Team Recommendations</p>
-              <ul className="space-y-2">
-                {session.proposal.recommendations.map((item) => (
-                  <li key={item} className="flex gap-2 text-xs text-slate-700 leading-relaxed">
-                    <span className="text-primary font-bold mt-0.5">•</span>
-                    <span>{item}</span>
+              <ol className="list-decimal space-y-2 pl-5 marker:font-semibold marker:text-primary">
+                {session.proposal.recommendations.map((item, index) => (
+                  <li key={`${item}-${index}`} className="break-words pl-1 text-xs leading-relaxed text-slate-700">
+                    {withoutListPrefix(item)}
                   </li>
                 ))}
-              </ul>
+              </ol>
             </div>
           </div>
         </CompactStepCard>
@@ -638,7 +640,7 @@ export function ClientWizard({
                     <p className="whitespace-pre-wrap">{values.adsPreviewComment || "No ad feedback added."}</p>
                   )}
                   {section.id === "recommendations" && (
-                    session.proposal.recommendations.length > 0 ? <ul className="list-disc space-y-2 pl-5">{session.proposal.recommendations.map((recommendation, index) => <li key={index}>{recommendation}</li>)}</ul> : <p>No additional recommendations from the SEM team.</p>
+                    session.proposal.recommendations.length > 0 ? <ol className="list-decimal space-y-2 pl-5">{session.proposal.recommendations.map((recommendation, index) => <li key={index} className="break-words pl-1">{withoutListPrefix(recommendation)}</li>)}</ol> : <p>No additional recommendations from the SEM team.</p>
                   )}
                   {section.id === "comments" && (
                     <p className="whitespace-pre-wrap">{values.finalComment || "No additional comments."}</p>

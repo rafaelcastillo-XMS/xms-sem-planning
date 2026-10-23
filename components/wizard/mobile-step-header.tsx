@@ -21,13 +21,13 @@ export function MobileStepHeader({
   totalSteps
 }: MobileStepHeaderProps) {
   return (
-    <header className="relative isolate overflow-hidden border-b border-slate-700 bg-slate-950 text-white shadow-xl shadow-slate-950/15">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950" />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 -z-10 h-64 w-64 rounded-full bg-blue-500/15 blur-3xl" />
-      <div className="mx-auto w-full max-w-xl px-4 pb-6 pt-5 sm:pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+    <header className="relative isolate overflow-hidden border-b border-blue-950/30 bg-[#002991] text-white shadow-lg shadow-blue-950/10">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-[#00143f] via-[#002991] to-[#064bb8]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 -z-10 h-56 w-56 rounded-full bg-cyan-300/15 blur-3xl" />
+      <div className="mx-auto w-full max-w-xl px-4 py-4 sm:py-5">
+        <div className="flex items-center justify-between gap-4 border-b border-white/15 pb-3">
           <div className="min-w-[200px] flex-1">
-            <div className="relative h-24 w-full sm:h-28">
+            <div className="relative h-12 w-full sm:h-14">
               <Image
                 src={publicAsset("/xms-logo-dark.webp")}
                 alt="XMS Ai"
@@ -38,7 +38,7 @@ export function MobileStepHeader({
               />
             </div>
           </div>
-          <div className="relative h-14 w-28 shrink-0 sm:h-16 sm:w-40">
+          <div className="relative h-10 w-24 shrink-0 sm:h-12 sm:w-32">
             <Image
               src={publicAsset("/google-partner-updated.png")}
               alt="Google Partner"
@@ -49,14 +49,14 @@ export function MobileStepHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-4 py-6">
-          <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-white/20 bg-white/10 shadow-lg">
+        <div className="flex items-center gap-3 py-4">
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/25 bg-white/10 shadow-md">
             {logoUrl ? (
               <Image
                 src={logoUrl}
                 alt={companyName}
                 fill
-                sizes="56px"
+                sizes="44px"
                 unoptimized
                 className="bg-white object-contain p-1"
               />
@@ -67,18 +67,18 @@ export function MobileStepHeader({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            {currentStep !== 1 && <p className="mb-2 text-sm font-semibold text-blue-200 sm:text-base">Your campaign planning</p>}
-            <p className="break-words text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
+            {currentStep !== 1 && <p className="mb-1 text-xs font-semibold text-blue-100 sm:text-sm">Your campaign planning</p>}
+            <p className="break-words text-xl font-extrabold leading-tight tracking-tight text-white sm:text-2xl">
               Hi, {companyName}!
             </p>
           </div>
         </div>
 
-        {currentStep !== 1 && <div className="mb-4">
-          <h2 className="break-words text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl">
+        {currentStep !== 1 && <div className="mb-3">
+          <h2 className="break-words text-lg font-bold leading-tight tracking-tight text-white sm:text-xl">
             {stepTitle}
           </h2>
-          <p className="mt-1.5 text-xs leading-relaxed text-slate-200 sm:text-sm">{stepDescription}</p>
+          <p className="mt-1 text-xs leading-relaxed text-blue-50/90 sm:text-sm">{stepDescription}</p>
         </div>}
 
         <StepProgressBar currentStep={currentStep} totalSteps={totalSteps} tone="dark" />
