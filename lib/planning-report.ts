@@ -13,11 +13,18 @@ const display = (value: unknown): string => {
 export function planningReportSections(client: Client, session: PlanningSession): ReportSection[] {
   const p = session.proposal;
   const r = session.response;
+  const includesLsa = p.campaignType !== "google_ads";
+  const campaignType = p.campaignType === "lsa"
+    ? "Local Services Ads"
+    : p.campaignType === "google_ads"
+      ? "Google Ads"
+      : "Local Services Ads + Google Ads";
   const summary = (step: { decision: string; comment?: string }) =>
     `${decision(step.decision)} - ${step.comment ? "client left a comment" : "no comment"}`;
-  return [
+  const sections: ReportSection[] = [
     { title: "Planning details", rows: [
       ["Status", session.status === "submitted" ? "Submitted" : "Not submitted"],
+      ["Campaign type", campaignType],
       ["Planning ID", session.id], ["Submitted at", session.submittedAt ? new Date(session.submittedAt).toISOString() : "Not submitted"],
       ["Contact phone", client.contactPhone]
     ] },
@@ -29,9 +36,41 @@ export function planningReportSections(client: Client, session: PlanningSession)
     { title: "Objectives & KPIs", rows: [["Context", p.kpiContext], ...p.kpiBlocks.map(k => [k.title, k.description] as ReportRow)] },
     { title: "Services", rows: [["Client decision", decision(r.services.decision)], ["Client comments", r.services.comment || "No comment"], ["Client selected services", r.services.selectedServices ?? p.services.selected], ["Proposed services", p.services.selected], ["Recommended services", p.services.recommended]] },
     { title: "Budget", rows: [["Client decision", decision(r.budget.decision)], ["Client comments", r.budget.comment || "No comment"], ["Requested budget", r.budget.requestedBudgetNote || "None - client did not request a different budget"], ["Weekly budget (USD)", p.budget.weeklyBudget], ["Monthly budget (USD)", p.budget.monthlyBudget], ["Google minimum (USD)", p.budget.minimumRequiredBudget], ["Recommendation", p.budget.recommendationNote]] },
-    { title: "Geo targeting", rows: [["Client decision", decision(r.geoTarget.decision)], ["Client comments", r.geoTarget.comment || "No comment"], ["Additional notes", r.geoTarget.note || "No notes"], ["Preferred locations", r.geoTarget.preferredLocations], ["Proposed locations", p.geoTarget.visibleLocations], ["Recommendation", p.geoTarget.recommendation]] },
-    { title: "Business profile & team", rows: [["Selected bio options", r.businessBioSelection.map(id => p.businessBioOptions.find(o => o.id === id)?.label || id)], ...Object.entries(r.missingInfoResponses).map(([id, value]) => [id === "totalFieldworkers" ? "Total fieldworkers" : p.missingInfoChecklist.find(i => i.id === id)?.label || id, value] as ReportRow), ["Acknowledged items", r.acknowledgedMissingItems.map(id => p.missingInfoChecklist.find(i => i.id === id)?.label || id)]] }
+    { title: "Geo targeting", rows: [["Client decision", decision(r.geoTarget.decision)], ["Client comments", r.geoTarget.comment || "No comment"], ["Additional notes", r.geoTarget.note || "No notes"], ["Preferred locations", r.geoTarget.preferredLocations], ["Proposed locations", p.geoTarget.visibleLocations], ["Recommendation", p.geoTarget.recommendation]] }
   ];
+
+  if (includesLsa) {
+    sections.push(
+      { title: "Business hours", rows: [
+        ...r.businessHours.map((hour) => [hour.day, hour.isClosed ? "Closed" : `${hour.openTime} - ${hour.closeTime}`] as ReportRow),
+        ["Business hours notes", r.hoursNotes || "No notes"]
+      ] },
+      { title: "Business profile & team", rows: [
+        ...(p.campaignType === "lsa" ? [["Selected bio options", r.businessBioSelection.map(id => p.businessBioOptions.find(o => o.id === id)?.label || id)] as ReportRow] : []),
+        ["Total fieldworkers", r.missingInfoResponses.totalFieldworkers]
+      ] }
+    );
+  }
+
+  if (p.missingInfoChecklist.length > 0) {
+    sections.push({
+      title: "Campaign questions",
+      rows: p.missingInfoChecklist.map((item) => [item.label, r.missingInfoResponses[item.id]] as ReportRow)
+    });
+  }
+
+  if (includesLsa) {
+    sections.push({ title: "LSA ads preview", rows: [["Client feedback", r.adsPreviewComment || "No feedback"]] });
+  }
+
+  sections.push(
+    { title: "SEM team recommendations", rows: p.recommendations.length > 0
+      ? p.recommendations.map((recommendation, index) => [`Recommendation ${index + 1}`, recommendation])
+      : [["Recommendations", "No recommendations provided"]] },
+    { title: "Final client comments", rows: [["Comments", r.finalComment || "No additional comments"]] }
+  );
+
+  return sections;
 }
 
 /** Paginated text PDF: no print dialog, pop-up or screenshot conversion. */

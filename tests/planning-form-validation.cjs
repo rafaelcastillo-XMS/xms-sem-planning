@@ -17,10 +17,66 @@ const { planningBuilderSchema, clientResponseSchema } = load('lib/validators.ts'
 const { createProposalFromBuilder, sessionToBuilderValues, builderValuesToProposal } = load('lib/planning-mappers.ts');
 const { createEmptyClientResponse } = load('lib/defaults.ts');
 const requiredValues = {
+  campaignType: 'lsa',
   clientName: 'Test Company', slug: 'test-company', selectedServicesText: 'Service A\nService B',
   weeklyBudget: 500, monthlyBudget: 2200, minimumRequiredBudget: 2000,
   locationsText: 'Location A\nLocation B', businessBioOptionsText: 'Locally owned'
 };
+
+test('campaign selection loads the correct prefabricated questions without removing custom ones', () => {
+  const { campaignQuestionTemplates, questionsForCampaignType } = load('lib/question-templates.ts');
+  const custom = { id: 'client-launch-date', label: 'Preferred launch date?', description: '',
+    required: false, fieldType: 'text', optionsText: '' };
+
+  assert.deepEqual(campaignQuestionTemplates('lsa').map(question => question.id), ['lsa-message-leads']);
+  assert.equal(campaignQuestionTemplates('google_ads').length, 7);
+  assert.equal(campaignQuestionTemplates('both').length, 10);
+  assert.deepEqual(
+    questionsForCampaignType('both', [custom]).map(question => question.id),
+    [
+      'google-ads-campaign-focus',
+      'google-ads-demographics-exclusions',
+      'google-ads-target-audience',
+      'google-ads-keywords',
+      'google-ads-negative-keywords',
+      'google-ads-preview-feedback',
+      'google-ads-landing-page',
+      'lsa-message-leads',
+      'both-google-ads-budget',
+      'both-google-ads-geo',
+      'client-launch-date'
+    ]
+  );
+  assert.deepEqual(
+    questionsForCampaignType('lsa', questionsForCampaignType('google_ads', [custom])).map(question => question.id),
+    ['lsa-message-leads', 'client-launch-date']
+  );
+});
+
+test('each campaign type receives the correct wizard sections and always ends with review', () => {
+  const { wizardStepsForCampaign } = load('lib/wizard-config.ts');
+  const sections = campaignType => wizardStepsForCampaign(campaignType, true).map(step => step.section);
+
+  assert.deepEqual(sections('lsa'), [
+    'overview', 'services', 'budget', 'geo', 'hours', 'bio', 'team',
+    'ads', 'recommendations', 'comments', 'review'
+  ]);
+  assert.deepEqual(sections('google_ads'), [
+    'overview', 'services', 'budget', 'geo', 'team',
+    'recommendations', 'comments', 'review'
+  ]);
+  assert.deepEqual(sections('both'), [
+    'overview', 'services', 'budget', 'geo', 'hours', 'team',
+    'ads', 'recommendations', 'comments', 'review'
+  ]);
+});
+
+test('business bio is required only for the LSA-only plan', () => {
+  const withoutBio = { ...requiredValues, businessBioOptionsText: '' };
+  assert.equal(planningBuilderSchema.safeParse(withoutBio).success, false);
+  assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'google_ads' }).success, true);
+  assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'both' }).success, true);
+});
 
 test('optional recommendations can be omitted or left blank when creating a plan', () => {
   for (const blank of [undefined, '', '   ']) {

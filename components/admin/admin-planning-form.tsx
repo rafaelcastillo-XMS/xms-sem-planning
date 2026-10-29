@@ -19,6 +19,12 @@ import {
   planningBuilderSchema,
   type PlanningBuilderValues
 } from "@/lib/validators";
+import {
+  campaignTemplateLabel,
+  campaignQuestionTemplates,
+  isCampaignTemplateQuestion,
+  questionsForCampaignType
+} from "@/lib/question-templates";
 
 interface AdminPlanningFormProps {
   defaultValues: DefaultValues<PlanningBuilderValues>;
@@ -55,12 +61,14 @@ export function AdminPlanningForm({
   });
 
   const { register, handleSubmit, formState } = form;
-  const { fields: customQuestions, append: appendQuestion, remove: removeQuestion } = useFieldArray({
+  const { fields: customQuestions, append: appendQuestion, remove: removeQuestion, replace: replaceQuestions } = useFieldArray({
     control: form.control,
     name: "customQuestions"
   });
   const campaignType = form.watch("campaignType");
   const includesLsa = campaignType === "lsa" || campaignType === "both";
+  const includesBusinessBio = campaignType === "lsa";
+  const presetQuestionCount = campaignType ? campaignQuestionTemplates(campaignType).length : 0;
 
   return (
     <form onSubmit={handleSubmit(async (values) => {
@@ -79,7 +87,14 @@ export function AdminPlanningForm({
             <p className="text-sm text-slate-600">What does this client need? Your selection determines the default planning questions.</p>
             <RadioGroup
               value={campaignType}
-              onValueChange={(value) => form.setValue("campaignType", value as PlanningBuilderValues["campaignType"], { shouldDirty: true, shouldValidate: true })}
+              onValueChange={(value) => {
+                const nextCampaignType = value as PlanningBuilderValues["campaignType"];
+                const previousCampaignType = form.getValues("campaignType");
+                form.setValue("campaignType", nextCampaignType, { shouldDirty: true, shouldValidate: true });
+                if (previousCampaignType !== nextCampaignType) {
+                  replaceQuestions(questionsForCampaignType(nextCampaignType, form.getValues("customQuestions")));
+                }
+              }}
               className="grid gap-3 sm:grid-cols-3"
             >
               {[
@@ -94,6 +109,15 @@ export function AdminPlanningForm({
               ))}
             </RadioGroup>
             <FieldError message={formState.errors.campaignType?.message} />
+            {campaignType ? (
+              <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">
+                {campaignType === "lsa"
+                  ? `${presetQuestionCount} LSA question was loaded automatically, together with the existing services, budget, geo target, business bio, team, and ad preview flow.`
+                  : campaignType === "google_ads"
+                    ? `${presetQuestionCount} Google Ads questions were loaded automatically. You can review or edit them below.`
+                    : `${presetQuestionCount} Google Ads, LSA, and combined-plan questions were loaded without repeating shared sections.`}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -203,7 +227,7 @@ export function AdminPlanningForm({
           <CardHeader className="mb-5 bg-black py-4 text-white">
             <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
               <DollarSign className="h-4 w-4 shrink-0 text-white" />
-              3. Budget & Bidding
+              3. {campaignType === "both" ? "LSA Budget & Bidding" : "Budget & Bidding"}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -241,7 +265,7 @@ export function AdminPlanningForm({
           <CardHeader className="mb-5 bg-black py-4 text-white">
             <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
               <MapPin className="h-4 w-4 shrink-0 text-white" />
-              4. Geo Target
+              4. {campaignType === "both" ? "LSA Geo Target" : "Geo Target"}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -277,12 +301,7 @@ export function AdminPlanningForm({
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="photoInstructionsText" className="text-xs font-semibold uppercase text-slate-500">Business &amp; work photos description (optional)</Label>
-              <Textarea id="photoInstructionsText" aria-describedby="photoInstructionsText-error" aria-invalid={!!formState.errors.photoInstructionsText} {...register("photoInstructionsText")} placeholder="e.g., Team photos, completed projects, and images of services in progress." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
-              <FieldError id="photoInstructionsText-error" message={formState.errors.photoInstructionsText?.message} />
-            </div>
-            <div className="grid gap-2">
+            {includesBusinessBio ? <div className="grid gap-2">
               <Label htmlFor="businessBioOptionsText" className="text-xs font-semibold uppercase text-slate-500">Business bio options (required)</Label>
               <p id="businessBioOptionsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
                 <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -296,12 +315,12 @@ export function AdminPlanningForm({
                 className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive"
               />
               <FieldError id="businessBioOptionsText-error" message={formState.errors.businessBioOptionsText?.message} />
-            </div>
-            <div className="grid gap-2">
+            </div> : null}
+            {includesLsa ? <div className="grid gap-2">
               <Label htmlFor="adsPreviewNote" className="text-xs font-semibold uppercase text-slate-500">Ads preview note (optional)</Label>
               <Textarea id="adsPreviewNote" aria-describedby="adsPreviewNote-error" aria-invalid={!!formState.errors.adsPreviewNote} {...register("adsPreviewNote")} placeholder="Describe what the client should review in the ads and any details that may vary." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />
               <FieldError id="adsPreviewNote-error" message={formState.errors.adsPreviewNote?.message} />
-            </div>
+            </div> : null}
           </CardContent>
         </Card> : null}
 
@@ -327,17 +346,20 @@ export function AdminPlanningForm({
           <CardHeader className="mb-5 bg-black py-4 text-white">
             <CardTitle className="flex items-center gap-2 text-base font-bold leading-snug text-white">
               <Plus className="h-4 w-4 shrink-0 text-white" />
-              Custom client questions
+              Preset and custom client questions
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <p className="text-sm text-slate-600">Add any extra information the client should provide. These questions will appear in their planning flow.</p>
+            <p className="text-sm text-slate-600">Campaign questions load automatically from the selected plan. You can edit them or add client-specific questions.</p>
             {customQuestions.map((question, index) => {
               const fieldType = form.watch(`customQuestions.${index}.fieldType`);
               return (
                 <div key={question.id} className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-slate-800">Question {index + 1}</p>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">Question {index + 1}</p>
+                      {isCampaignTemplateQuestion(question.id) ? <p className="mt-0.5 text-xs font-medium text-blue-700">{campaignTemplateLabel(question.id)}</p> : null}
+                    </div>
                     <Button type="button" variant="ghost" size="sm" onClick={() => removeQuestion(index)} className="text-slate-500 hover:text-destructive">
                       <Trash2 className="mr-1.5 h-4 w-4" /> Remove
                     </Button>

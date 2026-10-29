@@ -7,6 +7,7 @@ import {
   Briefcase,
   Users,
   Megaphone,
+  Clock3,
   AlertCircle,
   type LucideIcon
 } from "lucide-react";
@@ -23,6 +24,7 @@ const money = (value: number) => `$${value.toLocaleString("en-US")}`;
 
 export function ClientResponseView({ session }: ClientResponseViewProps) {
   const { response, proposal } = session;
+  const includesLsa = proposal.campaignType !== "google_ads";
   if (session.status !== "submitted")
     return (
       <Card>
@@ -102,24 +104,33 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
           <Quote text={response.geoTarget.note} label="Additional notes" />
         </Section>
 
-        <Section icon={Users} title="Business profile & team">
-          <Field label="Selected bio options">
+        {includesLsa ? <Section icon={Clock3} title="Business hours">
+          <div className="space-y-2">
+            {response.businessHours.map((hour) => (
+              <div key={hour.day} className="flex justify-between gap-3 text-sm">
+                <span className="capitalize text-slate-600">{hour.day}</span>
+                <span className="font-semibold text-slate-900">{hour.isClosed ? "Closed" : `${hour.openTime}–${hour.closeTime}`}</span>
+              </div>
+            ))}
+          </div>
+          <Quote text={response.hoursNotes} label="Business hours notes" />
+        </Section> : null}
+
+        {includesLsa ? <Section icon={Users} title="Business profile & team">
+          {proposal.campaignType === "lsa" ? <Field label="Selected bio options">
             <TagList
               items={response.businessBioSelection.map(
                 (id) => proposal.businessBioOptions.find((o) => o.id === id)?.label || id
               )}
               empty="None selected"
             />
-          </Field>
+          </Field> : null}
           <Field label="Total fieldworkers">
             <p className="text-sm font-bold text-primary">
               {String(response.missingInfoResponses.totalFieldworkers || "No response provided")}
             </p>
           </Field>
-          <Field label="Business hours notes">
-            <p className="text-sm text-slate-700">{response.hoursNotes || "No specific notes provided."}</p>
-          </Field>
-        </Section>
+        </Section> : null}
 
         {proposal.missingInfoChecklist.length > 0 && (
           <Section icon={Briefcase} title="Additional checklist" className="md:col-span-2">

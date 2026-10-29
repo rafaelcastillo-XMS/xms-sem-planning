@@ -14,6 +14,7 @@ import { createEmptyClientResponse } from "@/lib/defaults";
 import { seededClients } from "@/mock-data/clients";
 import { seededSessions } from "@/mock-data/planning";
 import { CLIENTS_TABLE, SESSIONS_TABLE, supabase } from "@/lib/supabase";
+import { missingInfoQuestionsForCampaign } from "@/lib/question-templates";
 import {
   Client,
   ClientResponse,
@@ -73,7 +74,10 @@ const normalizeSeedState = (state: PlanningSeedState): PlanningSeedState => ({
     proposal: {
       ...session.proposal,
       campaignType: session.proposal.campaignType ?? "lsa",
-      missingInfoChecklist: session.proposal.missingInfoChecklist ?? [],
+      missingInfoChecklist: missingInfoQuestionsForCampaign(
+        session.proposal.campaignType ?? "lsa",
+        session.proposal.missingInfoChecklist ?? []
+      ),
       assetRequirements: session.proposal.assetRequirements.map((requirement) => {
         if (requirement.id === "logo" && !requirement.instructions) {
           return { ...requirement, instructions: LOGO_INSTRUCTIONS };

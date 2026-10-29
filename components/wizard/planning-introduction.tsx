@@ -5,6 +5,12 @@ import { PlanningProposal } from "@/types/planning";
 export function PlanningIntroduction({ proposal }: {
   proposal: PlanningProposal;
 }) {
+  const campaignName = proposal.campaignType === "lsa"
+    ? "Local Services Ads"
+    : proposal.campaignType === "google_ads"
+      ? "Google Ads"
+      : "Local Services Ads and Google Ads";
+
   return (
     <section className="space-y-4" aria-labelledby="planning-welcome-title">
       <div className="relative overflow-hidden rounded-2xl bg-slate-950 p-6 text-white sm:p-8">
@@ -14,7 +20,7 @@ export function PlanningIntroduction({ proposal }: {
             <Sparkles aria-hidden="true" className="h-4 w-4" /> Your campaign starts here
           </span>
           <h2 id="planning-welcome-title" className="text-3xl font-bold leading-tight tracking-tight">Let’s shape your Google ads plan.</h2>
-          <p className="text-sm leading-relaxed text-slate-300">Review the Local Services Ads plan prepared by our SEM team, tell us what works for your business, and request any changes before submitting your feedback.</p>
+          <p className="text-sm leading-relaxed text-slate-300">Review the {campaignName} plan prepared by our SEM team, tell us what works for your business, and request any changes before submitting your feedback.</p>
         </div>
       </div>
 
@@ -23,7 +29,7 @@ export function PlanningIntroduction({ proposal }: {
         <ol className="mt-5 space-y-5">
           {[
             { icon: MapPin, title: "Review your campaign", description: "Choose your services and locations, and review the recommended budget and Google’s monthly minimum." },
-            { icon: MessageSquare, title: "Make it yours", description: "Confirm your business details, preview your ads, and tell us what you’d like to change." },
+            { icon: MessageSquare, title: "Make it yours", description: "Confirm your business details, answer the campaign questions, and tell us what you’d like to change." },
             { icon: ClipboardCheck, title: "Check and submit", description: "Review your answers in the final step, then send your feedback to the SEM team." }
           ].map(({ icon: Icon, title, description }, index) => (
             <li key={title} className="flex gap-3">

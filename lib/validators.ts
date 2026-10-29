@@ -121,7 +121,7 @@ export const planningBuilderSchema = z.object({
   adsPreviewNote: z.string().trim().default(""),
   customQuestions: z.array(customQuestionSchema).default([])
 }).superRefine((values, ctx) => {
-  if (values.campaignType !== "google_ads" && values.businessBioOptionsText.trim().length < 5) {
+  if (values.campaignType === "lsa" && values.businessBioOptionsText.trim().length < 5) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["businessBioOptionsText"],

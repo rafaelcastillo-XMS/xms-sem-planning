@@ -13,7 +13,8 @@ import {
   Lightbulb,
   Flag,
   ClipboardCheck,
-  MessageSquare
+  MessageSquare,
+  Clock3
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Confetti from "react-confetti";
@@ -23,6 +24,7 @@ import { PlanningIntroduction } from "@/components/wizard/planning-introduction"
 import { AdsPreviewCard } from "@/components/wizard/ads-preview-card";
 import { BioCategorySelector } from "@/components/wizard/bio-category-selector";
 import { BudgetSummaryCard } from "@/components/wizard/budget-summary-card";
+import { BusinessHoursEditor } from "@/components/wizard/business-hours-editor";
 import { CompactStepCard } from "@/components/wizard/compact-step-card";
 import { DecisionCardGroup } from "@/components/wizard/decision-card-group";
 import { GeoTargetSelector } from "@/components/wizard/geo-target-selector";
@@ -35,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { REVIEW_SECTIONS, WIZARD_STEPS } from "@/lib/wizard-config";
+import { reviewSectionsForCampaign, wizardStepsForCampaign } from "@/lib/wizard-config";
 import {
   clientResponseSchema,
   ClientResponseFormValues
@@ -89,17 +91,11 @@ export function ClientWizard({
 
   const values = watch();
 
-  const includesLsa = (session.proposal.campaignType ?? "lsa") !== "google_ads";
-  const wizardSteps = WIZARD_STEPS.filter((step) => {
-    if ((step.section === "bio" || step.section === "ads") && !includesLsa) return false;
-    if (step.section === "team" && !includesLsa && session.proposal.missingInfoChecklist.length === 0) return false;
-    return true;
-  });
-  const reviewSections = REVIEW_SECTIONS.filter((section) => {
-    if ((section.id === "bio" || section.id === "ads") && !includesLsa) return false;
-    if (section.id === "team" && !includesLsa && session.proposal.missingInfoChecklist.length === 0) return false;
-    return true;
-  });
+  const campaignType = session.proposal.campaignType ?? "lsa";
+  const includesLsa = campaignType !== "google_ads";
+  const hasQuestions = session.proposal.missingInfoChecklist.length > 0;
+  const wizardSteps = wizardStepsForCampaign(campaignType, hasQuestions);
+  const reviewSections = reviewSectionsForCampaign(campaignType, hasQuestions);
   const totalSteps = wizardSteps.length;
   const currentStepMeta = wizardSteps[currentStep - 1];
   const currentSection = currentStepMeta.section;
@@ -132,6 +128,10 @@ export function ClientWizard({
         "geoTarget.note",
         "geoTarget.comment"
       ]);
+    }
+
+    if (currentSection === "hours") {
+      return trigger(["businessHours", "hoursNotes"]);
     }
 
     if (currentSection === "bio") {
@@ -195,7 +195,8 @@ export function ClientWizard({
       if (currentStep === totalSteps) {
         if (!await trigger([
           "introAcknowledged", "services", "budget", "geoTarget",
-          "businessBioSelection", "missingInfoResponses", "adsPreviewComment", "finalComment"
+          "businessHours", "hoursNotes", "businessBioSelection",
+          "missingInfoResponses", "adsPreviewComment", "finalComment"
         ])) {
           setStepError("Please review your answers and correct the highlighted fields before submitting.");
           return;
@@ -325,7 +326,7 @@ export function ClientWizard({
       ) : null}
 
       {currentSection === "budget" ? (
-        <CompactStepCard title="Budget & Bidding" description="Confirm plan and request adjustments if needed.">
+        <CompactStepCard title={currentStepMeta.title} description={currentStepMeta.description}>
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-slate-800 tracking-tight">Campaign Investment</span>
@@ -348,7 +349,7 @@ export function ClientWizard({
       ) : null}
 
       {currentSection === "geo" ? (
-        <CompactStepCard title="Geo Target" description="Confirm and adjust preferred target areas.">
+        <CompactStepCard title={currentStepMeta.title} description={currentStepMeta.description}>
           <div className="flex items-center gap-2 mb-2">
             <MapPin className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-slate-800 tracking-tight">Location Strategy</span>
@@ -395,6 +396,28 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
+      {currentSection === "hours" ? (
+        <CompactStepCard title="Business Hours" description="Confirm when customers can contact the business.">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock3 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-slate-800 tracking-tight">Weekly Schedule</span>
+          </div>
+          <BusinessHoursEditor
+            hours={values.businessHours}
+            onChange={(hours) => setValue("businessHours", hours, { shouldDirty: true, shouldValidate: true })}
+          />
+          <div className="mt-4 grid gap-2">
+            <Label htmlFor="hours-notes">Business hours notes</Label>
+            <Textarea
+              id="hours-notes"
+              placeholder="Add emergency hours, seasonal changes, or other scheduling details."
+              value={values.hoursNotes || ""}
+              onChange={(event) => setValue("hoursNotes", event.target.value, { shouldDirty: true, shouldValidate: true })}
+            />
+          </div>
+        </CompactStepCard>
+      ) : null}
+
       {currentSection === "bio" ? (
         <CompactStepCard title="Business Bio" description="Choose at least one category that best fits your business.">
           <div className="flex items-center gap-2 mb-2">
@@ -416,8 +439,8 @@ export function ClientWizard({
 
       {currentSection === "team" ? (
         <CompactStepCard
-          title={includesLsa ? "Team Information" : "Additional Information"}
-          description={includesLsa ? "Tell us about your active field service team." : "Complete the questions from our SEM team."}
+          title={currentStepMeta.title}
+          description={currentStepMeta.description}
         >
           {includesLsa ? <div className="flex items-center gap-2 mb-2">
             <Users className="h-4 w-4 text-primary" />
@@ -618,6 +641,17 @@ export function ClientWizard({
                       {values.geoTarget.comment && <div className="rounded-lg bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.geoTarget.comment}</p></div>}
                       {values.geoTarget.note && <p className="whitespace-pre-wrap">{values.geoTarget.note}</p>}
                     </>
+                  )}
+                  {section.id === "hours" && (
+                    <div className="space-y-2">
+                      {values.businessHours.map((hour) => (
+                        <div key={hour.day} className="flex justify-between gap-3 border-b border-slate-100 pb-1 last:border-0">
+                          <span className="capitalize">{hour.day}</span>
+                          <span className="font-medium">{hour.isClosed ? "Closed" : `${hour.openTime}–${hour.closeTime}`}</span>
+                        </div>
+                      ))}
+                      {values.hoursNotes ? <p className="whitespace-pre-wrap pt-2">{values.hoursNotes}</p> : null}
+                    </div>
                   )}
                   {section.id === "bio" && (
                     <>
