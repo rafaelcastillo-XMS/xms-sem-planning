@@ -110,7 +110,7 @@ export function AdminPlanningForm({
             </RadioGroup>
             <FieldError message={formState.errors.campaignType?.message} />
             {campaignType ? (
-              <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">
+              <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">
                 {campaignType === "lsa"
                   ? `${presetQuestionCount} LSA question was loaded automatically, together with the existing services, budget, geo target, business bio, team, and ad preview flow.`
                   : campaignType === "google_ads"
@@ -173,7 +173,7 @@ export function AdminPlanningForm({
               {readingLogo && <p role="status" className="text-xs">Preparing image…</p>}
               {form.watch("logoUrl") && <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.watch("logoUrl")} alt="Company logo preview" className="h-20 w-20 rounded-lg border object-contain" />
+                <img src={form.watch("logoUrl")} alt="Company logo preview" className="h-20 w-20 rounded-xl border object-contain" />
                 <Button type="button" variant="outline" disabled={readingLogo || formState.isSubmitting} onClick={() => { form.setValue("logoUrl", "", { shouldDirty: true, shouldValidate: true }); }}>Remove logo</Button>
               </div>}
               <FieldError message={formState.errors.logoUrl?.message} />
@@ -417,7 +417,7 @@ export function AdminPlanningForm({
 
         <Card className="premium-card border-primary/10 overflow-hidden">
           <div className="h-1.5 w-full bg-gradient-to-r from-primary to-blue-400" />
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-700">
               <Zap className="h-4 w-4 text-primary fill-primary/10" />
               Actions

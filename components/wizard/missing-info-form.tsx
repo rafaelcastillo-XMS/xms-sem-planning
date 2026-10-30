@@ -70,7 +70,7 @@ export function MissingInfoForm({
             ) : null}
 
             {item.fieldType === "checkbox" ? (
-              <div className="flex items-center gap-2 rounded-lg border border-dashed p-2">
+              <div className="flex items-center gap-2 rounded-md border border-dashed p-2">
                 <Checkbox
                   id={`value-${item.id}`}
                   checked={Boolean(values[item.id])}

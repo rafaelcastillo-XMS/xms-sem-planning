@@ -43,7 +43,7 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Summary */}
-      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
@@ -85,7 +85,7 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
           </Field>
           {response.budget.requestedBudgetNote && (
             <Field label="Budget the client requested">
-              <p className="rounded-lg border border-primary/10 bg-primary/5 p-2 text-sm font-bold text-primary">
+              <p className="rounded-md border border-primary/10 bg-primary/5 p-2 text-sm font-bold text-primary">
                 {response.budget.requestedBudgetNote}
               </p>
             </Field>
@@ -160,7 +160,7 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
 
         {response.finalComment && (
           <Section icon={MessageSquare} title="Final client comment" className="md:col-span-2">
-            <p className="rounded-2xl bg-slate-900 p-3 text-sm italic leading-relaxed text-slate-100">
+            <p className="rounded-xl bg-slate-900 p-3 text-sm italic leading-relaxed text-slate-100">
               &quot;{response.finalComment}&quot;
             </p>
           </Section>
@@ -248,7 +248,7 @@ function TagList({ items, empty, muted }: { items: string[]; empty: string; mute
 
 function Amount({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-2">
+    <div className="rounded-md bg-slate-50 p-2">
       <dt className="text-[10px] font-bold uppercase text-slate-500">{label}</dt>
       <dd className="text-sm font-bold text-slate-900">{value}</dd>
     </div>
@@ -259,7 +259,7 @@ function Quote({ text, label }: { text?: string; label: string }) {
   if (!text) return null;
   return (
     <Field label={label}>
-      <p className="rounded-lg border border-slate-100 bg-slate-50 p-2 text-sm italic text-slate-700">
+      <p className="rounded-md border border-slate-100 bg-slate-50 p-2 text-sm italic text-slate-700">
         &quot;{text}&quot;
       </p>
     </Field>

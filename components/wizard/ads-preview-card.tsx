@@ -34,7 +34,7 @@ export function AdsPreviewCard({
 }: AdsPreviewCardProps) {
   return (
     <Card className="overflow-hidden border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-cyan-50 to-slate-50">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <CardTitle className="text-sm">Google LSA Preview</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">

@@ -50,7 +50,7 @@ export function MobileStepHeader({
         </div>
 
         <div className="flex items-center gap-3 py-4">
-          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/25 bg-white/10 shadow-md">
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-white/25 bg-white/10 shadow-md">
             {logoUrl ? (
               <Image
                 src={logoUrl}

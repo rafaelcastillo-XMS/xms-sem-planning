@@ -15,11 +15,11 @@ export function GeneratedPublicUrlCard({ publicPath }: GeneratedPublicUrlCardPro
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <CardTitle className="text-sm">Public URL</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="rounded-lg border bg-secondary/40 p-3 text-xs text-muted-foreground">
+        <div className="rounded-xl border bg-secondary/40 p-3 text-xs text-muted-foreground">
           {absoluteUrl}
         </div>
         <div className="flex flex-wrap gap-2">

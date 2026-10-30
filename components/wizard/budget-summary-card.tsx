@@ -5,7 +5,7 @@ import { BudgetConfig } from "@/types/planning";
 export function BudgetSummaryCard({ budget }: { budget: BudgetConfig }) {
   return (
     <Card className="premium-card border-primary/20 bg-primary/5">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <CardTitle className="text-sm font-bold tracking-tight">Recommended Campaign Budget</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">

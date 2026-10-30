@@ -241,7 +241,7 @@ export function ClientWizard({
               </p>
             </div>
             
-            <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-100">
+            <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100">
               <p className="text-xs text-slate-600 font-medium italic text-center">
                 &quot;Our team will review your responses and reach out shortly to finalize the campaign launch details.&quot;
               </p>
@@ -481,7 +481,7 @@ export function ClientWizard({
                   { shouldDirty: true, shouldValidate: true }
                 )
               }
-              className="w-full rounded-xl border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div> : null}
           {session.proposal.missingInfoChecklist.length > 0 ? (
@@ -626,7 +626,7 @@ export function ClientWizard({
                         <div className="flex flex-wrap justify-between gap-2"><dt>SEM monthly recommendation</dt><dd className="font-bold text-slate-950">{formatCurrency(session.proposal.budget.monthlyBudget)}</dd></div>
                         <div className="flex flex-wrap justify-between gap-2 border-t pt-2"><dt>Google monthly minimum</dt><dd className="font-bold text-slate-950">{formatCurrency(session.proposal.budget.minimumRequiredBudget)}</dd></div>
                       </dl>
-                      {values.budget.comment && <div className="rounded-lg bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.budget.comment}</p></div>}
+                      {values.budget.comment && <div className="rounded-xl bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.budget.comment}</p></div>}
                       {values.budget.requestedBudgetNote && <p className="whitespace-pre-wrap">Requested budget: {values.budget.requestedBudgetNote}</p>}
                     </>
                   )}
@@ -636,9 +636,9 @@ export function ClientWizard({
                         {values.geoTarget.decision === "accept" ? "Accepted as proposed" : "Changes requested"}
                       </span>
                       <p className="font-semibold text-slate-900">Selected locations</p>
-                      <div className="flex flex-wrap gap-2">{values.geoTarget.preferredLocations.map(location => <span key={location} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1">{location}</span>)}</div>
+                      <div className="flex flex-wrap gap-2">{values.geoTarget.preferredLocations.map(location => <span key={location} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1">{location}</span>)}</div>
                       {values.geoTarget.preferredLocations.length === 0 && <p>No locations selected.</p>}
-                      {values.geoTarget.comment && <div className="rounded-lg bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.geoTarget.comment}</p></div>}
+                      {values.geoTarget.comment && <div className="rounded-xl bg-slate-50 p-3"><p className="font-semibold">Your comments</p><p className="mt-1 whitespace-pre-wrap">{values.geoTarget.comment}</p></div>}
                       {values.geoTarget.note && <p className="whitespace-pre-wrap">{values.geoTarget.note}</p>}
                     </>
                   )}
@@ -656,14 +656,14 @@ export function ClientWizard({
                   {section.id === "bio" && (
                     <>
                       <p className="font-semibold text-slate-900">{values.businessBioSelection.length} of 6 categories selected</p>
-                      <div className="flex flex-wrap gap-2">{values.businessBioSelection.map(value => <span key={value} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-blue-900">{session.proposal.businessBioOptions.find(option => option.id === value)?.label ?? value}</span>)}</div>
+                      <div className="flex flex-wrap gap-2">{values.businessBioSelection.map(value => <span key={value} className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-blue-900">{session.proposal.businessBioOptions.find(option => option.id === value)?.label ?? value}</span>)}</div>
                     </>
                   )}
                   {section.id === "team" && (
                     <div className="space-y-3">
                       {includesLsa ? <p><span className="mr-2 text-2xl font-bold text-slate-950">{String(values.missingInfoResponses?.totalFieldworkers ?? "—")}</span> active fieldworkers</p> : null}
                       {session.proposal.missingInfoChecklist.map((item) => (
-                        <div key={item.id} className="rounded-lg bg-slate-50 p-3">
+                        <div key={item.id} className="rounded-xl bg-slate-50 p-3">
                           <p className="text-xs font-semibold text-slate-500">{item.label}</p>
                           <p className="mt-1 whitespace-pre-wrap text-slate-900">{String(values.missingInfoResponses?.[item.id] ?? "") || "No answer provided."}</p>
                         </div>

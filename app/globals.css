@@ -15,13 +15,15 @@
   --secondary-foreground: 222 47% 11%;
   --muted: 210 40% 96%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 15 95% 65%;
-  --accent-foreground: 222 2.2% 5%;
+  --accent: 210 40% 94%;
+  --accent-foreground: 222 47% 11%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 210 100% 45%;
+  /* Radius scale: sm 4px (checkbox, tags) · md 10px (controls, hints, chips)
+     · xl 12px (inner panels/tiles) · 2xl 16px (cards = --radius) · 3xl 24px (shell) */
   --radius: 1rem;
 }
 

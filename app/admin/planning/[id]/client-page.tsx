@@ -121,7 +121,7 @@ export default function AdminPlanningDetailPage() {
           <button
             onClick={() => setActiveTab("proposal")}
             className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all",
               activeTab === "proposal" ? "bg-white text-primary shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-700"
             )}
           >
@@ -131,7 +131,7 @@ export default function AdminPlanningDetailPage() {
           <button
             onClick={() => setActiveTab("results")}
             className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+              "flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all",
               activeTab === "results" ? "bg-white text-primary shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-700"
             )}
           >

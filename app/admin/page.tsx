@@ -90,7 +90,7 @@ export default function AdminPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <CardTitle className="text-lg font-bold">{client.name}</CardTitle>
-                      <CardDescription className="text-xs font-mono bg-slate-100/50 px-1.5 py-0.5 rounded inline-block text-slate-500">
+                      <CardDescription className="text-xs font-mono bg-slate-100/50 px-1.5 py-0.5 rounded-sm inline-block text-slate-500">
                         /{client.slug}
                       </CardDescription>
                     </div>
