@@ -8,6 +8,7 @@ import {
   Users,
   DollarSign,
   MapPin,
+  Type,
   Megaphone,
   Lightbulb,
   Flag,
@@ -21,6 +22,7 @@ import { useWindowSize } from "react-use";
 
 import { PlanningIntroduction } from "@/components/wizard/planning-introduction";
 import { AdsPreviewCard } from "@/components/wizard/ads-preview-card";
+import { BioCategorySelector } from "@/components/wizard/bio-category-selector";
 import { BudgetSummaryCard } from "@/components/wizard/budget-summary-card";
 import { BusinessHoursEditor } from "@/components/wizard/business-hours-editor";
 import { CompactStepCard } from "@/components/wizard/compact-step-card";
@@ -141,6 +143,16 @@ export function ClientWizard({
       return trigger(["businessHours", "hoursNotes"]);
     }
 
+    if (currentSection === "bio") {
+      const ok = await trigger(["businessBioSelection"]);
+      if (!ok) return false;
+      if (getValues("businessBioSelection").length === 0) {
+        setStepError("Please choose at least one business highlight.");
+        return false;
+      }
+      return true;
+    }
+
     if (currentSection === "team") {
       const value = Number(getValues("missingInfoResponses.totalFieldworkers") ?? 0);
       if (includesLsa && (!value || Number.isNaN(value) || value < 1)) {
@@ -192,7 +204,7 @@ export function ClientWizard({
       if (currentStep === totalSteps) {
         if (!await trigger([
           "introAcknowledged", "services", "budget", "geoTarget",
-          "businessHours", "hoursNotes",
+          "businessHours", "hoursNotes", "businessBioSelection",
           "missingInfoResponses", "adsPreviewComment", "finalComment"
         ])) {
           setStepError("Please review your answers and correct the highlighted fields before submitting.");
@@ -415,6 +427,25 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
+      {currentSection === "bio" ? (
+        <CompactStepCard title="Business Bio" description="Choose at least one highlight that describes your business.">
+          <div className="flex items-center gap-2 mb-2">
+            <Type className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-slate-800 tracking-tight">Business highlights</span>
+          </div>
+          <BioCategorySelector
+            options={session.proposal.businessBioOptions}
+            selected={values.businessBioSelection}
+            onChange={(value) =>
+              setValue("businessBioSelection", value, {
+                shouldDirty: true,
+                shouldValidate: true
+              })
+            }
+          />
+        </CompactStepCard>
+      ) : null}
+
       {currentSection === "team" ? (
         <CompactStepCard
           title={currentStepMeta.title}
@@ -523,6 +554,11 @@ export function ClientWizard({
               session.proposal.geoTarget.visibleLocations[0]
             }
             phoneNumber={client.contactPhone || "(555) 555-0100"}
+            bioDescription={
+              session.proposal.businessBioOptions.find(
+                (option) => option.id === values.businessBioSelection[0]
+              )?.label ?? values.businessBioSelection[0]
+            }
           />
           <div className="grid gap-2 mt-6">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Feedback or changes</Label>
@@ -657,6 +693,12 @@ export function ClientWizard({
                       ))}
                       {values.hoursNotes ? <p className="whitespace-pre-wrap pt-2">{values.hoursNotes}</p> : null}
                     </div>
+                  )}
+                  {section.id === "bio" && (
+                    <>
+                      <p className="font-semibold text-slate-900">{values.businessBioSelection.length} of 6 highlights selected</p>
+                      <div className="flex flex-wrap gap-2">{values.businessBioSelection.map(value => <span key={value} className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-blue-900">{session.proposal.businessBioOptions.find(option => option.id === value)?.label ?? value}</span>)}</div>
+                    </>
                   )}
                   {section.id === "team" && (
                     <div className="space-y-3">

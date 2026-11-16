@@ -8,6 +8,7 @@ interface AdsPreviewCardProps {
   service?: string;         // Servicio principal
   location?: string;        // Ciudad / locación
   phoneNumber?: string;     // Número de contacto
+  bioDescription?: string;  // Business highlight selected by the client
   rating?: number;          // Rating (default 4.9)
   reviewsCount?: number;    // Cantidad de reseñas (display)
 }
@@ -26,6 +27,7 @@ export function AdsPreviewCard({
   service,
   location,
   phoneNumber,
+  bioDescription,
   rating = 4.9,
   reviewsCount = 124
 }: AdsPreviewCardProps) {
@@ -90,6 +92,12 @@ export function AdsPreviewCard({
               <Phone className="h-3.5 w-3.5 text-slate-500" />
               <span>{phoneNumber}</span>
             </div>
+          ) : null}
+
+          {bioDescription ? (
+            <p className="text-xs text-slate-600 mt-2 italic">
+              {bioDescription}
+            </p>
           ) : null}
 
         </div>

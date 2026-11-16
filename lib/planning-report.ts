@@ -46,6 +46,7 @@ export function planningReportSections(client: Client, session: PlanningSession)
         ["Business hours notes", r.hoursNotes || "No notes"]
       ] },
       { title: "Team information", rows: [
+        ["Selected business bio highlights", r.businessBioSelection.map(id => p.businessBioOptions.find(o => o.id === id)?.label || id)],
         ["Total fieldworkers", r.missingInfoResponses.totalFieldworkers]
       ] }
     );

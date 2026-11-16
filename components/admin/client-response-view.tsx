@@ -117,6 +117,14 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
         </Section> : null}
 
         {includesLsa ? <Section icon={Users} title="Team information">
+          <Field label="Selected business bio highlights">
+            <TagList
+              items={response.businessBioSelection.map(
+                (id) => proposal.businessBioOptions.find((o) => o.id === id)?.label || id
+              )}
+              empty="None selected"
+            />
+          </Field>
           <Field label="Total fieldworkers">
             <p className="text-sm font-bold text-primary">
               {String(response.missingInfoResponses.totalFieldworkers || "No response provided")}

@@ -58,7 +58,7 @@ test('each campaign type receives the correct wizard sections and always ends wi
   const sections = campaignType => wizardStepsForCampaign(campaignType, true).map(step => step.section);
 
   assert.deepEqual(sections('lsa'), [
-    'overview', 'services', 'budget', 'geo', 'hours', 'team',
+    'overview', 'services', 'budget', 'geo', 'hours', 'bio', 'team',
     'ads', 'recommendations', 'comments', 'review'
   ]);
   assert.deepEqual(sections('google_ads'), [
@@ -66,16 +66,16 @@ test('each campaign type receives the correct wizard sections and always ends wi
     'recommendations', 'comments', 'review'
   ]);
   assert.deepEqual(sections('both'), [
-    'overview', 'services', 'budget', 'geo', 'hours', 'team',
+    'overview', 'services', 'budget', 'geo', 'hours', 'bio', 'team',
     'ads', 'recommendations', 'comments', 'review'
   ]);
 });
 
-test('business bio is optional for every campaign type', () => {
+test('business bio is required for plans that include LSA', () => {
   const withoutBio = { ...requiredValues, businessBioOptionsText: '' };
-  assert.equal(planningBuilderSchema.safeParse(withoutBio).success, true);
+  assert.equal(planningBuilderSchema.safeParse(withoutBio).success, false);
   assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'google_ads' }).success, true);
-  assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'both' }).success, true);
+  assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'both' }).success, false);
 });
 
 test('optional recommendations can be omitted or left blank when creating a plan', () => {
@@ -95,7 +95,7 @@ test('optional recommendations can be omitted or left blank when creating a plan
 
 test('required fields still block saving and identify the field to correct', () => {
   for (const key of ['clientName', 'slug', 'selectedServicesText', 'weeklyBudget',
-    'monthlyBudget', 'minimumRequiredBudget', 'locationsText']) {
+    'monthlyBudget', 'minimumRequiredBudget', 'locationsText', 'businessBioOptionsText']) {
     const result = planningBuilderSchema.safeParse({ ...requiredValues, [key]: '' });
     assert.equal(result.success, false, key);
     assert.ok(result.error.issues.some(issue => issue.path[0] === key && issue.message.length > 0), key);

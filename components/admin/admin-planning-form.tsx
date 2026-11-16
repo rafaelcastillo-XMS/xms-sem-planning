@@ -67,6 +67,7 @@ export function AdminPlanningForm({
   });
   const campaignType = form.watch("campaignType");
   const includesLsa = campaignType === "lsa" || campaignType === "both";
+  const includesBusinessBio = includesLsa;
   const presetQuestionCount = campaignType ? campaignQuestionTemplates(campaignType).length : 0;
 
   return (
@@ -111,7 +112,7 @@ export function AdminPlanningForm({
             {campaignType ? (
               <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">
                 {campaignType === "lsa"
-                  ? `${presetQuestionCount} LSA question was loaded automatically, together with the existing services, budget, geo target, team, and ad preview flow.`
+                  ? `${presetQuestionCount} LSA question was loaded automatically, together with the existing services, budget, geo target, business bio, team, and ad preview flow.`
                   : campaignType === "google_ads"
                     ? `${presetQuestionCount} Google Ads questions were loaded automatically. You can review or edit them below.`
                     : `${presetQuestionCount} Google Ads, LSA, and combined-plan questions were loaded without repeating shared sections.`}
@@ -300,6 +301,21 @@ export function AdminPlanningForm({
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
+            {includesBusinessBio ? <div className="grid gap-2">
+              <Label htmlFor="businessBioOptionsText" className="text-xs font-semibold uppercase text-slate-500">Business bio options (required)</Label>
+              <p id="businessBioOptionsText-hint" className="flex w-fit items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">
+                <Info aria-hidden="true" className="h-4 w-4 shrink-0" />
+                One verified business highlight per line. Press Enter to add another.
+              </p>
+              <Textarea
+                id="businessBioOptionsText"
+                aria-describedby="businessBioOptionsText-hint businessBioOptionsText-error"
+                aria-invalid={!!formState.errors.businessBioOptionsText} aria-required="true" {...register("businessBioOptionsText")}
+                placeholder={"e.g., Locally owned\ne.g., Free estimates"}
+                className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive"
+              />
+              <FieldError id="businessBioOptionsText-error" message={formState.errors.businessBioOptionsText?.message} />
+            </div> : null}
             {includesLsa ? <div className="grid gap-2">
               <Label htmlFor="adsPreviewNote" className="text-xs font-semibold uppercase text-slate-500">Ads preview note (optional)</Label>
               <Textarea id="adsPreviewNote" aria-describedby="adsPreviewNote-error" aria-invalid={!!formState.errors.adsPreviewNote} {...register("adsPreviewNote")} placeholder="Describe what the client should review in the ads and any details that may vary." className="bg-white/50 placeholder:text-slate-400 aria-invalid:border-destructive" />

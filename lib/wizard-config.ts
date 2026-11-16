@@ -32,6 +32,12 @@ export const WIZARD_STEPS: WizardStep[] = [
     description: "Confirm when customers can contact the business"
   },
   {
+    id: 6,
+    section: "bio",
+    title: "Business Bio",
+    description: "Choose up to 6 business highlights"
+  },
+  {
     id: 7,
     section: "team",
     title: "Team Information",
@@ -85,6 +91,11 @@ export const REVIEW_SECTIONS: ReviewSection[] = [
     description: "Confirmed operating schedule"
   },
   {
+    id: "bio",
+    title: "Business Bio",
+    description: "Selected business highlights"
+  },
+  {
     id: "team",
     title: "Team Information",
     description: "Field team size"
@@ -114,6 +125,7 @@ const teamCopy = (campaignType: CampaignType) => campaignType === "google_ads"
 
 const sectionIsAvailable = (section: WizardStep["section"], campaignType: CampaignType, hasQuestions: boolean) => {
   if (section === "hours" || section === "ads") return campaignType !== "google_ads";
+  if (section === "bio") return campaignType !== "google_ads";
   if (section === "team") return campaignType !== "google_ads" || hasQuestions;
   return true;
 };
