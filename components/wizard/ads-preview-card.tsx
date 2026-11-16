@@ -8,7 +8,6 @@ interface AdsPreviewCardProps {
   service?: string;         // Servicio principal
   location?: string;        // Ciudad / locación
   phoneNumber?: string;     // Número de contacto
-  bioDescription?: string;  // Una de las 6 descripciones del business BIO
   rating?: number;          // Rating (default 4.9)
   reviewsCount?: number;    // Cantidad de reseñas (display)
 }
@@ -21,14 +20,12 @@ interface AdsPreviewCardProps {
 //   - Rating con estrellas + reviews
 //   - Location
 //   - Number
-//   - Descripción seleccionada (una de las 6 del business BIO)
 export function AdsPreviewCard({
   note,
   businessName,
   service,
   location,
   phoneNumber,
-  bioDescription,
   rating = 4.9,
   reviewsCount = 124
 }: AdsPreviewCardProps) {
@@ -95,12 +92,6 @@ export function AdsPreviewCard({
             </div>
           ) : null}
 
-          {/* Descripción del business BIO */}
-          {bioDescription ? (
-            <p className="text-xs text-slate-600 mt-2 italic">
-              {bioDescription}
-            </p>
-          ) : null}
         </div>
 
         {/* Nota interna del SEM team */}

@@ -42,6 +42,21 @@ Planning creation writes the full proposal and initial response in the first
 session insert. Create, edit, draft-save and final-submit flows await Supabase;
 failed saves retain the form and show an error instead of reporting success.
 
+## Submission notifications with n8n
+
+After Supabase confirms a final submission, the app calls the server-only n8n
+webhook configured in `N8N_SUBMISSION_WEBHOOK_URL`. The payload contains the
+client name, campaign type, submission date and admin results URL; it does not
+send the client's form responses. Notification failures are logged without
+turning a successfully saved planning into a failed submission.
+
+In n8n, use a Webhook node with `POST`, header authentication named
+`X-Webhook-Secret`, and a production path such as `sem-planning-submitted`.
+Connect it to an email node, a Slack node, or both, then activate the workflow.
+Use `notificationId` as the idempotency key if the workflow stores delivery
+history. Copy the production URL and the same header secret into the deployment
+environment using `.env.example` as the reference.
+
 ### Verification
 
 - `npm run lint`

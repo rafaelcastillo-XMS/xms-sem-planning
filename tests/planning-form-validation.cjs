@@ -34,6 +34,7 @@ test('campaign selection loads the correct prefabricated questions without remov
   assert.deepEqual(
     questionsForCampaignType('both', [custom]).map(question => question.id),
     [
+      'lsa-message-leads',
       'google-ads-campaign-focus',
       'google-ads-demographics-exclusions',
       'google-ads-target-audience',
@@ -41,7 +42,6 @@ test('campaign selection loads the correct prefabricated questions without remov
       'google-ads-negative-keywords',
       'google-ads-preview-feedback',
       'google-ads-landing-page',
-      'lsa-message-leads',
       'both-google-ads-budget',
       'both-google-ads-geo',
       'client-launch-date'
@@ -58,7 +58,7 @@ test('each campaign type receives the correct wizard sections and always ends wi
   const sections = campaignType => wizardStepsForCampaign(campaignType, true).map(step => step.section);
 
   assert.deepEqual(sections('lsa'), [
-    'overview', 'services', 'budget', 'geo', 'hours', 'bio', 'team',
+    'overview', 'services', 'budget', 'geo', 'hours', 'team',
     'ads', 'recommendations', 'comments', 'review'
   ]);
   assert.deepEqual(sections('google_ads'), [
@@ -71,9 +71,9 @@ test('each campaign type receives the correct wizard sections and always ends wi
   ]);
 });
 
-test('business bio is required only for the LSA-only plan', () => {
+test('business bio is optional for every campaign type', () => {
   const withoutBio = { ...requiredValues, businessBioOptionsText: '' };
-  assert.equal(planningBuilderSchema.safeParse(withoutBio).success, false);
+  assert.equal(planningBuilderSchema.safeParse(withoutBio).success, true);
   assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'google_ads' }).success, true);
   assert.equal(planningBuilderSchema.safeParse({ ...withoutBio, campaignType: 'both' }).success, true);
 });
@@ -95,7 +95,7 @@ test('optional recommendations can be omitted or left blank when creating a plan
 
 test('required fields still block saving and identify the field to correct', () => {
   for (const key of ['clientName', 'slug', 'selectedServicesText', 'weeklyBudget',
-    'monthlyBudget', 'minimumRequiredBudget', 'locationsText', 'businessBioOptionsText']) {
+    'monthlyBudget', 'minimumRequiredBudget', 'locationsText']) {
     const result = planningBuilderSchema.safeParse({ ...requiredValues, [key]: '' });
     assert.equal(result.success, false, key);
     assert.ok(result.error.issues.some(issue => issue.path[0] === key && issue.message.length > 0), key);
@@ -124,16 +124,11 @@ test('client can select several locations and request budget changes through com
   assert.equal(saved.budget.decision, 'request_changes');
 });
 
-test('custom bio categories survive validation and reporting, with a maximum of six', () => {
-  const { planningReportSections } = load('lib/planning-report.ts');
+test('legacy bio selections remain valid, with a maximum of six', () => {
   const proposal = createProposalFromBuilder(planningBuilderSchema.parse(requiredValues));
   const response = createEmptyClientResponse(proposal);
   response.businessBioSelection = [proposal.businessBioOptions[0].id, 'Bilingual team'];
-  const saved = clientResponseSchema.parse(response);
-  assert.deepEqual(saved.businessBioSelection, response.businessBioSelection);
-  const report = planningReportSections({ name: 'Test Company' }, { proposal, response: saved });
-  const bioSection = report.find(section => section.title === 'Business profile & team');
-  assert.deepEqual(bioSection.rows[0][1], ['Locally owned', 'Bilingual team']);
+  assert.deepEqual(clientResponseSchema.parse(response).businessBioSelection, response.businessBioSelection);
   response.businessBioSelection = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
   assert.equal(clientResponseSchema.safeParse(response).success, true);
   response.businessBioSelection.push('Seven');

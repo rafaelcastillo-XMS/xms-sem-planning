@@ -8,7 +8,6 @@ import {
   Users,
   DollarSign,
   MapPin,
-  Type,
   Megaphone,
   Lightbulb,
   Flag,
@@ -22,7 +21,6 @@ import { useWindowSize } from "react-use";
 
 import { PlanningIntroduction } from "@/components/wizard/planning-introduction";
 import { AdsPreviewCard } from "@/components/wizard/ads-preview-card";
-import { BioCategorySelector } from "@/components/wizard/bio-category-selector";
 import { BudgetSummaryCard } from "@/components/wizard/budget-summary-card";
 import { BusinessHoursEditor } from "@/components/wizard/business-hours-editor";
 import { CompactStepCard } from "@/components/wizard/compact-step-card";
@@ -94,6 +92,15 @@ export function ClientWizard({
   const campaignType = session.proposal.campaignType ?? "lsa";
   const includesLsa = campaignType !== "google_ads";
   const hasQuestions = session.proposal.missingInfoChecklist.length > 0;
+  const lsaQuestions = session.proposal.missingInfoChecklist.filter((item) => item.id.startsWith("lsa-"));
+  const googleAdsQuestions = session.proposal.missingInfoChecklist.filter((item) =>
+    item.id.startsWith("google-ads-") || item.id.startsWith("both-google-ads-")
+  );
+  const additionalQuestions = session.proposal.missingInfoChecklist.filter((item) =>
+    !item.id.startsWith("lsa-") &&
+    !item.id.startsWith("google-ads-") &&
+    !item.id.startsWith("both-google-ads-")
+  );
   const wizardSteps = wizardStepsForCampaign(campaignType, hasQuestions);
   const reviewSections = reviewSectionsForCampaign(campaignType, hasQuestions);
   const totalSteps = wizardSteps.length;
@@ -132,16 +139,6 @@ export function ClientWizard({
 
     if (currentSection === "hours") {
       return trigger(["businessHours", "hoursNotes"]);
-    }
-
-    if (currentSection === "bio") {
-      const ok = await trigger(["businessBioSelection"]);
-      if (!ok) return false;
-      if (getValues("businessBioSelection").length === 0) {
-        setStepError("Please choose at least one category.");
-        return false;
-      }
-      return true;
     }
 
     if (currentSection === "team") {
@@ -195,7 +192,7 @@ export function ClientWizard({
       if (currentStep === totalSteps) {
         if (!await trigger([
           "introAcknowledged", "services", "budget", "geoTarget",
-          "businessHours", "hoursNotes", "businessBioSelection",
+          "businessHours", "hoursNotes",
           "missingInfoResponses", "adsPreviewComment", "finalComment"
         ])) {
           setStepError("Please review your answers and correct the highlighted fields before submitting.");
@@ -418,25 +415,6 @@ export function ClientWizard({
         </CompactStepCard>
       ) : null}
 
-      {currentSection === "bio" ? (
-        <CompactStepCard title="Business Bio" description="Choose at least one category that best fits your business.">
-          <div className="flex items-center gap-2 mb-2">
-            <Type className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">Market Positioning</span>
-          </div>
-          <BioCategorySelector
-            options={session.proposal.businessBioOptions}
-            selected={values.businessBioSelection}
-            onChange={(value) =>
-              setValue("businessBioSelection", value, {
-                shouldDirty: true,
-                shouldValidate: true
-              })
-            }
-          />
-        </CompactStepCard>
-      ) : null}
-
       {currentSection === "team" ? (
         <CompactStepCard
           title={currentStepMeta.title}
@@ -444,7 +422,9 @@ export function ClientWizard({
         >
           {includesLsa ? <div className="flex items-center gap-2 mb-2">
             <Users className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">Field Team</span>
+            <span className="text-sm font-bold text-slate-800 tracking-tight">
+              {campaignType === "both" ? "Local Services Ads (LSA)" : "Field Team"}
+            </span>
           </div> : null}
           {includesLsa ? <div className="rounded-xl border bg-white p-4 shadow-sm space-y-2">
             <div className="flex items-start gap-2">
@@ -484,7 +464,37 @@ export function ClientWizard({
               className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div> : null}
-          {session.proposal.missingInfoChecklist.length > 0 ? (
+          {campaignType === "both" ? (
+            <div className="mt-4">
+              {lsaQuestions.length > 0 ? <MissingInfoForm
+                items={lsaQuestions}
+                values={values.missingInfoResponses || {}}
+                onValueChange={(id, value) => setValue("missingInfoResponses", { ...(values.missingInfoResponses || {}), [id]: value }, { shouldDirty: true, shouldValidate: true })}
+              /> : null}
+              {googleAdsQuestions.length > 0 ? <div className="mt-6">
+                <div className="mb-2 flex items-center gap-2">
+                  <Megaphone className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold tracking-tight text-slate-800">Google Ads</span>
+                </div>
+                <MissingInfoForm
+                  items={googleAdsQuestions}
+                  values={values.missingInfoResponses || {}}
+                  onValueChange={(id, value) => setValue("missingInfoResponses", { ...(values.missingInfoResponses || {}), [id]: value }, { shouldDirty: true, shouldValidate: true })}
+                />
+              </div> : null}
+              {additionalQuestions.length > 0 ? <div className="mt-6">
+                <div className="mb-2 flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold tracking-tight text-slate-800">Additional questions</span>
+                </div>
+                <MissingInfoForm
+                  items={additionalQuestions}
+                  values={values.missingInfoResponses || {}}
+                  onValueChange={(id, value) => setValue("missingInfoResponses", { ...(values.missingInfoResponses || {}), [id]: value }, { shouldDirty: true, shouldValidate: true })}
+                />
+              </div> : null}
+            </div>
+          ) : session.proposal.missingInfoChecklist.length > 0 ? (
             <div className="mt-4">
               <MissingInfoForm
                 items={session.proposal.missingInfoChecklist}
@@ -513,11 +523,6 @@ export function ClientWizard({
               session.proposal.geoTarget.visibleLocations[0]
             }
             phoneNumber={client.contactPhone || "(555) 555-0100"}
-            bioDescription={
-              session.proposal.businessBioOptions.find(
-                (option) => option.id === values.businessBioSelection[0]
-              )?.label ?? values.businessBioSelection[0]
-            }
           />
           <div className="grid gap-2 mt-6">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Feedback or changes</Label>
@@ -652,12 +657,6 @@ export function ClientWizard({
                       ))}
                       {values.hoursNotes ? <p className="whitespace-pre-wrap pt-2">{values.hoursNotes}</p> : null}
                     </div>
-                  )}
-                  {section.id === "bio" && (
-                    <>
-                      <p className="font-semibold text-slate-900">{values.businessBioSelection.length} of 6 categories selected</p>
-                      <div className="flex flex-wrap gap-2">{values.businessBioSelection.map(value => <span key={value} className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-blue-900">{session.proposal.businessBioOptions.find(option => option.id === value)?.label ?? value}</span>)}</div>
-                    </>
                   )}
                   {section.id === "team" && (
                     <div className="space-y-3">

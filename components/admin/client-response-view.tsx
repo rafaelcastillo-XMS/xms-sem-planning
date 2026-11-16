@@ -116,15 +116,7 @@ export function ClientResponseView({ session }: ClientResponseViewProps) {
           <Quote text={response.hoursNotes} label="Business hours notes" />
         </Section> : null}
 
-        {includesLsa ? <Section icon={Users} title="Business profile & team">
-          {proposal.campaignType === "lsa" ? <Field label="Selected bio options">
-            <TagList
-              items={response.businessBioSelection.map(
-                (id) => proposal.businessBioOptions.find((o) => o.id === id)?.label || id
-              )}
-              empty="None selected"
-            />
-          </Field> : null}
+        {includesLsa ? <Section icon={Users} title="Team information">
           <Field label="Total fieldworkers">
             <p className="text-sm font-bold text-primary">
               {String(response.missingInfoResponses.totalFieldworkers || "No response provided")}

@@ -44,8 +44,19 @@ export default function ClientSlugPage() {
     return updateSessionResponse(session.id, values, "in_review");
   };
 
-  const submitFinal = (values: ClientResponseFormValues) => {
-    return submitSession(session.id, values);
+  const submitFinal = async (values: ClientResponseFormValues) => {
+    await submitSession(session.id, values);
+
+    try {
+      const response = await fetch("/api/submission-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id })
+      });
+      if (!response.ok) console.error("Submission notification failed", await response.text());
+    } catch (error) {
+      console.error("Submission notification failed", error);
+    }
   };
 
   return <ClientWizard client={client} session={session} onSaveDraft={saveDraft} onSubmitFinal={submitFinal} />;

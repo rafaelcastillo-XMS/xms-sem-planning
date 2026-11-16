@@ -45,8 +45,7 @@ export function planningReportSections(client: Client, session: PlanningSession)
         ...r.businessHours.map((hour) => [hour.day, hour.isClosed ? "Closed" : `${hour.openTime} - ${hour.closeTime}`] as ReportRow),
         ["Business hours notes", r.hoursNotes || "No notes"]
       ] },
-      { title: "Business profile & team", rows: [
-        ...(p.campaignType === "lsa" ? [["Selected bio options", r.businessBioSelection.map(id => p.businessBioOptions.find(o => o.id === id)?.label || id)] as ReportRow] : []),
+      { title: "Team information", rows: [
         ["Total fieldworkers", r.missingInfoResponses.totalFieldworkers]
       ] }
     );

@@ -80,8 +80,8 @@ const GOOGLE_ADS_QUESTIONS: BuilderQuestionTemplate[] = [
 ];
 
 const COMBINED_QUESTIONS: BuilderQuestionTemplate[] = [
-  ...GOOGLE_ADS_QUESTIONS,
   ...LSA_QUESTIONS,
+  ...GOOGLE_ADS_QUESTIONS,
   {
     id: "both-google-ads-budget",
     label: "What Google Ads budget should be used in addition to the LSA budget?",
@@ -133,7 +133,7 @@ export function isCampaignTemplateQuestion(id: string) {
 }
 
 export function campaignTemplateLabel(id: string) {
-  if (id.startsWith("google-ads-")) return "Google Ads preset";
+  if (id.startsWith("google-ads-") || id.startsWith("both-google-ads-")) return "Google Ads preset";
   if (id.startsWith("lsa-")) return "LSA preset";
   return "Combined plan preset";
 }

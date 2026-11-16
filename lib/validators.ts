@@ -120,14 +120,6 @@ export const planningBuilderSchema = z.object({
   businessBioOptionsText: z.string().default(""),
   adsPreviewNote: z.string().trim().default(""),
   customQuestions: z.array(customQuestionSchema).default([])
-}).superRefine((values, ctx) => {
-  if (values.campaignType === "lsa" && values.businessBioOptionsText.trim().length < 5) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["businessBioOptionsText"],
-      message: "Add a business bio option (5 or more characters)"
-    });
-  }
 });
 
 export type PlanningBuilderValues = z.infer<typeof planningBuilderSchema>;

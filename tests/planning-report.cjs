@@ -85,13 +85,13 @@ test('final report includes only the sections that belong to each campaign mode'
   assert.ok(googleSections.includes('Campaign questions'));
   assert.ok(googleSections.includes('Final client comments'));
   assert.ok(!googleSections.includes('Business hours'));
-  assert.ok(!googleSections.includes('Business profile & team'));
+  assert.ok(!googleSections.includes('Team information'));
   assert.ok(!googleSections.includes('LSA ads preview'));
 
   const both = structuredClone(google);
   both.proposal.campaignType = 'both';
   const bothSections = planningReportSections(client, both).map(section => section.title);
   assert.ok(bothSections.includes('Business hours'));
-  assert.ok(bothSections.includes('Business profile & team'));
+  assert.ok(bothSections.includes('Team information'));
   assert.ok(bothSections.includes('LSA ads preview'));
 });
